@@ -4,8 +4,8 @@ This document describes how Baibu Community Edition is tested: the testing
 strategy, tools, coverage targets, sample test cases, the core data
 structures under test and the pull request workflow.
 
-The skeleton (stage 0), text submissions (stage 1) and the assistant chat
-(stage 2) are being built. This plan
+The skeleton (stage 0), text submissions (stage 1), the assistant chat
+(stage 2, in progress) and phone sign-in (from stage 3) are built. This plan
 covers them and sets out how later stages will be tested. It is updated as
 features land.
 
@@ -108,10 +108,22 @@ the same pull request.
 
 ### Implemented
 
-**User.** A person with an account. Signs in by email. Has a profile.
+**User.** A person with an account. Signs in by email, and by phone when
+`PHONE_SIGN_IN_ENABLED` is on. Has a profile.
 
 - Email addresses are unique and compared case-insensitively.
 - A user can see and edit only their own profile.
+- Phone numbers are stored in E.164 format (`+` and 7 to 15 digits); input
+  formatting (spaces, dashes, dots, brackets, a leading `00`) is removed,
+  and numbers without a country code are refused.
+- A phone number signs someone in only once it is verified with a code sent
+  to it. A verified number belongs to one user; unverified numbers may
+  repeat, and verifying a number removes it from accounts where it is still
+  unverified.
+- Asking for a sign-in code for an unknown or unverified number gives the
+  same response as for a known number, and sends nothing.
+- With phone sign-in off (the default), sign-in and sign-up behave as with
+  email only, and the phone pages do not exist.
 
 **ConsentRecord.** One entry in a user's consent history.
 
@@ -206,6 +218,12 @@ feature lands.
 | TC-DEL-01 | Deletion request | Signed-in user with no open deletion request | Submit a deletion request from the account page | An AccountDeletionRequest with status `submitted` exists. The user sees a confirmation with a receipt number and is signed out. The account is deactivated but not deleted yet. |
 | TC-DEL-02 | Deletion request | User with a `submitted` request | Capture a second request for the same user (for example two requests sent at the same time) | No second request is created. The existing request is returned. |
 | TC-DEL-03 | Deletion request | Request with status `submitted` | Try to move it straight to `completed` | The transition is refused. The status stays `submitted`. |
+| TC-PHN-01 | Phone sign-in | Phone sign-in on, in-memory messaging provider. A user with verified number `+1 201 555 0123`. | 1. Request a sign-in code for `+1 201-555-0123`. 2. Enter the code from the recorded message. | One message was sent to `+12015550123`, containing a six-digit code and the platform name. The user is signed in. |
+| TC-PHN-02 | Phone sign-in | Phone sign-in on. No verified account has `+44 7700 900123`; another account has it unverified. | Request a sign-in code for `+44 7700 900123` | The response is the same as for a known number (code page). No message is sent. |
+| TC-PHN-03 | Phone sign-in | Phone sign-in on. Signed-in user without a phone number. | 1. Add `+1 201 555 0123` under Account, Phone. 2. Enter the code from the recorded message. | The number is stored as `+12015550123` and marked verified. |
+| TC-PHN-04 | Phone sign-in | Phone sign-in on. Another user has `+1 201 555 0123` verified. | Add the same number to a second account and enter the code | Verification is refused. The second account has no number; the first keeps its verified number. |
+| TC-PHN-05 | Phone sign-in | Phone sign-in on. The messaging provider raises `MessagingError`. | Request a sign-in code for a verified number | The user sees that the text could not be sent; no error page. The failure is logged with the number masked. |
+| TC-PHN-06 | Phone sign-in | Phone sign-in off (default) | Open the sign-up page and `/accounts/phone/change/` | The sign-up form has no phone field. The phone page returns 404. |
 | TC-WL-01 | White-label settings | Settings set the platform name to "Example Platform" and the contact address to `help@example.org` | Load the home page and the sign-in email | The page title, header and email use "Example Platform" and `help@example.org`. The default platform name does not appear in the title, header or email. |
 | TC-WL-02 | White-label settings | A deployment override directory contains a replacement footer template | Load any page | The override footer is rendered instead of the default. |
 | TC-STO-01 | File storage | Each backend in turn: in-memory, a temporary directory, an S3-compatible server | Save a JSON payload with non-Latin text under a key, read it back, save again under the same key, delete it | The payload reads back unchanged. The second save returns a different key and the first file is untouched. After deletion the key reads as missing. Private files on the filesystem have no URL. |

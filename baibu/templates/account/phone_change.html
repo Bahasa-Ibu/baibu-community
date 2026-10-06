@@ -1,0 +1,35 @@
+{% extends "account/base_manage_phone.html" %}
+{% load i18n %}
+{% comment %}Restyles allauth's phone page: shows the current number and its status, then the form.{% endcomment %}
+{% block head_title %}{% translate "Phone number" %}{% endblock head_title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Phone number" %}</h1>
+  {% if phone %}
+    <p class="mb-4 text-stone-700">
+      {% blocktranslate %}Your number: <strong>{{ phone }}</strong>{% endblocktranslate %}
+      {% if phone_verified %}
+        <span class="status status-verified">{% translate "Verified" %}</span>
+      {% else %}
+        <span class="status status-needs_review">{% translate "Not verified" %}</span>
+      {% endif %}
+    </p>
+    {% if not phone_verified %}
+      <form method="post" action="{% url 'account_change_phone' %}" class="mb-6">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="verify">
+        <p class="mb-2 text-sm text-stone-600">{% translate "You cannot sign in with this number until it is verified." %}</p>
+        <button type="submit" class="btn-secondary">{% translate "Send a verification code" %}</button>
+      </form>
+    {% endif %}
+  {% else %}
+    <p class="mb-4 text-stone-700">{% translate "Add a phone number to sign in with a code sent to it by text message." %}</p>
+  {% endif %}
+  <form method="post" action="{% url 'account_change_phone' %}" novalidate>
+    {% csrf_token %}
+    {% include "includes/form_fields.html" with form=form %}
+    <button type="submit" name="action_add" class="btn-primary">
+      {% if phone %}{% translate "Change number" %}{% else %}{% translate "Add number" %}{% endif %}
+    </button>
+  </form>
+  <p class="mt-4 text-sm text-stone-600">{% translate "We will send a code to the new number to check it is yours." %}</p>
+{% endblock content %}

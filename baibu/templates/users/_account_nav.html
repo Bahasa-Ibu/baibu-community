@@ -9,6 +9,9 @@
   <a href="{{ account_url }}" class="{% if request.path == account_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Profile" %}</a>
   <a href="{{ consent_url }}" class="{% if request.path == consent_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Data use" %}</a>
   <a href="{{ email_url }}" class="btn-secondary">{% translate "Email" %}</a>
+  {% if platform.phone_sign_in %}
+    <a href="{% url 'account_change_phone' %}" class="btn-secondary">{% translate "Phone" %}</a>
+  {% endif %}
   <a href="{{ password_url }}" class="btn-secondary">{% translate "Password" %}</a>
   <a href="{{ mfa_url }}" class="btn-secondary">{% translate "Two-factor" %}</a>
   <a href="{{ deletion_url }}" class="{% if request.path == deletion_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Delete account" %}</a>

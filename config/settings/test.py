@@ -18,3 +18,4 @@ STORAGES = {
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
+MESSAGING_PROVIDER = "baibu.users.messaging.MemoryMessagingProvider"

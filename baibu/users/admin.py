@@ -34,7 +34,7 @@ class UserAdmin(auth_admin.UserAdmin):
     add_form = UserAdminCreationForm
     inlines = (ConsentRecordInline,)
     fieldsets = (
-        (None, {"fields": ("email", "password")}),
+        (None, {"fields": ("email", "phone", "phone_verified", "password")}),
         (_("Profile"), {"fields": ("name", "city", "country")}),
         (
             _("Permissions"),
@@ -45,7 +45,7 @@ class UserAdmin(auth_admin.UserAdmin):
     add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "password1", "password2")}),)
     list_display = ("email", "name", "is_active", "is_staff", "date_joined")
     list_filter = ("is_active", "is_staff", "is_superuser")
-    search_fields = ("email", "name")
+    search_fields = ("email", "name", "phone")
     ordering = ("-date_joined",)
 
     def get_inlines(self, request, obj):

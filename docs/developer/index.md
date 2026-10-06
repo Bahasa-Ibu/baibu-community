@@ -7,6 +7,8 @@ This section is for people who change the code or run a deployment.
 - [Configuration reference](configuration.md): every environment variable.
 - [White-label deployments](white-label.md): how to give a deployment its own
   name, look, languages and pages without changing the code.
+- [Phone sign-in](phone-sign-in.md): one-time codes by text message, and how
+  to write a messaging provider.
 
 To run the platform locally, start with [Getting started](../getting-started.md).
 To send a change, read the [contributing guide](../community/contributing.md).

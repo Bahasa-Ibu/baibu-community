@@ -8,6 +8,9 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from .phone import normalize_phone
+from .phone import validate_e164
+
 
 class ImmutableRecordError(Exception):
     """Raised when code tries to change a record that must never change."""
@@ -66,25 +69,51 @@ class User(AbstractUser):
     last_name = None  # type: ignore[assignment]
     city = models.CharField(_("City"), max_length=128, blank=True)
     country = models.CharField(_("Country"), max_length=128, blank=True)
+    # For phone sign-in (PHONE_SIGN_IN_ENABLED). International format, e.g. +15550100.
+    # Null, like email, means "none".
+    phone = models.CharField(  # noqa: DJ001
+        _("Phone number"),
+        max_length=16,
+        null=True,
+        blank=True,
+        db_index=True,
+        validators=[validate_e164],
+    )
+    phone_verified = models.BooleanField(_("Phone number verified"), default=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
 
     objects = UserManager()
 
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # Only a verified number belongs to someone. Unverified numbers may
+            # repeat, so nobody can block a number by typing it in first.
+            models.UniqueConstraint(
+                fields=["phone"],
+                condition=models.Q(phone_verified=True),
+                name="users_unique_verified_phone",
+            ),
+        ]
+
     def save(self, *args, **kwargs):
-        original_email = self.email
+        original = (self.email, self.phone, self.phone_verified)
         self.email = User.objects.normalize_email_or_none(self.email)
-        if original_email != self.email and (update_fields := kwargs.get("update_fields")):
-            if "email" not in update_fields:
-                kwargs["update_fields"] = [*update_fields, "email"]
+        self.phone = normalize_phone(self.phone) or None
+        if not self.phone:
+            self.phone_verified = False
+        if original != (self.email, self.phone, self.phone_verified) and (
+            update_fields := kwargs.get("update_fields")
+        ):
+            kwargs["update_fields"] = list({*update_fields, "email", "phone", "phone_verified"})
         super().save(*args, **kwargs)
 
     def get_absolute_url(self) -> str:
         return reverse("users:account")
 
     def display_identifier(self) -> str:
-        return self.name or self.email or str(self.pk)
+        return self.name or self.email or self.phone or str(self.pk)
 
     def __str__(self) -> str:
         return self.display_identifier()
