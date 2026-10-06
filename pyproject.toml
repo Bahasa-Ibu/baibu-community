@@ -17,6 +17,7 @@ dependencies = [
     "django-storages[s3]==1.14.6",
     "gunicorn==23.0.0",
     "hiredis==3.3.0",
+    "litellm==1.104.0",
     "psycopg[binary]==3.2.10",
     "redis==6.4.0",
     "whitenoise==6.11.0",

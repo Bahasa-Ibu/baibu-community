@@ -36,6 +36,7 @@ reached through LiteLLM, which the deployment chooses.
 | --- | --- |
 | `baibu.core` | Platform settings exposed to templates (`platform` context), language configuration, the file storage interface, the `/health/` endpoint, the worker heartbeat task, and keeping the Site record in line with the platform name and domain. |
 | `baibu.users` | The user model (email sign-in, one `name` field), profile completion, consent history, account deletion requests, and the admin for all three. |
+| `baibu.submissions` | Text contributions: the submission form and list, the cleaning task and pluggable cleaners, and the admin used for review. See [Submissions and cleaning](submissions.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 
 Sign-in, sign-up, email confirmation, password reset and two-factor
@@ -43,12 +44,14 @@ authentication come from [django-allauth](https://docs.allauth.org/). The
 templates in `baibu/templates/allauth/` restyle its pages; they do not change
 its behaviour.
 
-## Data model (stage 0)
+## Data model
 
 ```mermaid
 erDiagram
     User ||--o{ ConsentRecord : "has history"
     User |o--o{ AccountDeletionRequest : "asks for"
+    User ||--o{ Submission : contributes
+    ConsentRecord |o--o{ Submission : "in force for"
     User {
         uuid id
         string email "unique, sign-in"
@@ -64,6 +67,19 @@ erDiagram
         datetime granted_at
         datetime revoked_at "set when replaced"
         json metadata "locale, consent_text_version"
+    }
+    Submission {
+        uuid id
+        string language_code
+        string status "pending, verified, needs_review, rejected, issue"
+        string consent_tier "at submission"
+        string raw_key "private storage"
+        string clean_key "private storage"
+        string content_hash "unique"
+        text excerpt "of the cleaned text"
+        string cleaner
+        bool toxicity_detected
+        int quality_score
     }
     AccountDeletionRequest {
         uuid id
@@ -113,6 +129,8 @@ the receipt number, source and time, never personal details.
   the language switcher) and `ProfileCompletionMiddleware` (signed-in users
   missing a field in `PROFILE_REQUIRED_FIELDS` are sent to complete their
   profile; sign-in pages, terms, privacy and the admin for staff are exempt).
+- Creating a submission queues `baibu.submissions.tasks.clean_submission`
+  once the database transaction commits.
 - Celery beat sends `baibu.core.tasks.heartbeat` every minute. The worker
   stores the time in the cache, and `/health/` reports the worker as `ok`,
   `stale` or `unknown`. `/health/` returns HTTP 503 only if the database or
@@ -132,5 +150,7 @@ never prefixed.
 | `/users/account/` | Profile |
 | `/users/account/consent/` | Consent choice and history |
 | `/users/account/delete/` | Account deletion request |
+| `/contribute/` | The user's submissions |
+| `/contribute/new/` | Submit text |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |
 | `/health/` | Health check (JSON) |
