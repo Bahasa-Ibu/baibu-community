@@ -24,7 +24,9 @@ from baibu.users.forms import ConsentForm
 
 from . import services
 from .forms import MessageForm
+from .forms import ReportForm
 from .models import Conversation
+from .models import Message
 from .models import Run
 
 
@@ -224,3 +226,19 @@ def delete_view(request: HttpRequest, pk) -> HttpResponse:
     _own_conversation(request, pk).delete()
     messages.success(request, _("The conversation was deleted."))
     return redirect("chat:home")
+
+
+@login_required
+@chat_enabled
+@cache_control(private=True, no_store=True)
+@require_http_methods(["GET", "POST"])
+def report_view(request: HttpRequest, message_id) -> HttpResponse:
+    message = get_object_or_404(Message, pk=message_id, conversation__user=request.user, role=Message.Role.ASSISTANT)
+    form = ReportForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        services.report_message(
+            message=message, user=request.user, reason=form.cleaned_data["reason"], note=form.cleaned_data["note"]
+        )
+        messages.success(request, _("Thank you. Someone on our team will look at this reply."))
+        return redirect("chat:conversation", pk=message.conversation_id)
+    return render(request, "chat/report.html", {"form": form, "message": message})

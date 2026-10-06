@@ -1,0 +1,11 @@
+{% load i18n %}
+<nav class="mb-6 flex flex-wrap gap-2 text-sm" aria-label="{% translate 'Staff' %}">
+  {% url 'staff:dashboard' as dashboard_url %}
+  {% url 'staff:submissions' as submissions_url %}
+  {% url 'staff:flags' as flags_url %}
+  {% url 'staff:errors' as errors_url %}
+  <a href="{{ dashboard_url }}" class="{% if request.path == dashboard_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Overview" %}</a>
+  <a href="{{ submissions_url }}" class="{% if submissions_url in request.path %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Submissions" %}</a>
+  <a href="{{ flags_url }}" class="{% if flags_url in request.path %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Reported replies" %}</a>
+  <a href="{{ errors_url }}" class="{% if request.path == errors_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Errors" %}</a>
+</nav>

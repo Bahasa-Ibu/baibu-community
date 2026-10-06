@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
+from .models import ChatFlag
 from .models import Conversation
 from .models import ConversationEvent
 from .models import Message
@@ -126,3 +127,16 @@ class PromptAdmin(admin.ModelAdmin):
             Prompt.objects.filter(name=prompt.name, active=True).update(active=False)
             Prompt.objects.filter(pk=prompt.pk).update(active=True)
         self.message_user(request, _("%(prompt)s is now active.") % {"prompt": prompt})
+
+
+@admin.register(ChatFlag)
+class ChatFlagAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "conversation", "created_at", "decided_by")
+    list_filter = ("status", "reason")
+    readonly_fields = [field.name for field in ChatFlag._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.method in {"GET", "HEAD"} and super().has_change_permission(request, obj)

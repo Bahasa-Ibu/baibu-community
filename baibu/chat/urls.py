@@ -12,4 +12,5 @@ urlpatterns = [
     path("<uuid:pk>/send/", views.send_view, name="send"),
     path("<uuid:pk>/delete/", views.delete_view, name="delete"),
     path("runs/<uuid:run_id>/retry/", views.retry_view, name="retry"),
+    path("replies/<uuid:message_id>/report/", views.report_view, name="report"),
 ]

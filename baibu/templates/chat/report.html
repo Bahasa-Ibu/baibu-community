@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Report a reply" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Report a reply" %}</h1>
+  <blockquote class="card mb-6 whitespace-pre-line text-stone-800">{{ message.content }}</blockquote>
+  <form method="post" class="card">
+    {% csrf_token %}
+    {% if form.reason.errors %}<div class="errorlist">{{ form.reason.errors }}</div>{% endif %}
+    <fieldset class="space-y-3">
+      <legend class="mb-2 font-semibold">{{ form.reason.label }}</legend>
+      {% for radio in form.reason %}
+        <label class="flex items-start gap-3 rounded-lg border border-stone-200 p-3 font-normal">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+      {% endfor %}
+    </fieldset>
+    <div class="mt-4">{{ form.note.as_field_group }}</div>
+    <div class="flex gap-3">
+      <button type="submit" class="btn-primary">{% translate "Send report" %}</button>
+      <a href="{% url 'chat:conversation' message.conversation_id %}" class="btn-secondary">{% translate "Cancel" %}</a>
+    </div>
+  </form>
+{% endblock content %}

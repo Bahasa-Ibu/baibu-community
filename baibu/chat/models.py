@@ -211,6 +211,45 @@ class ToolInvocation(models.Model):
         return f"{self.tool_name} ({self.status})"
 
 
+class ChatFlag(models.Model):
+    """A user's report about an assistant reply, for staff to review once."""
+
+    class Reason(models.TextChoices):
+        HARMFUL = "harmful", _("Harmful or offensive")
+        INCORRECT = "incorrect", _("Wrong or misleading")
+        OTHER = "other", _("Something else")
+
+    class Status(models.TextChoices):
+        OPEN = "open", _("Open")
+        CONFIRMED = "confirmed", _("Problem confirmed")
+        DISMISSED = "dismissed", _("No problem found")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="flags")
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="flags")
+    reported_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    reason = models.CharField(max_length=16, choices=Reason.choices)
+    note = models.CharField(max_length=500, blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN, db_index=True)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["message", "reported_by"], name="chat_flag_once_per_message"),
+        ]
+        verbose_name = _("Reported reply")
+        verbose_name_plural = _("Reported replies")
+
+    def __str__(self) -> str:
+        return f"{self.get_reason_display()} ({self.get_status_display()})"
+
+
 class ConversationEvent(models.Model):
     """Audit trail: what happened in a conversation and when. Append-only."""
 

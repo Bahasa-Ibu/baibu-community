@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Processing errors" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Processing errors" %}</h1>
+  {% include "staff/_nav.html" %}
+  <section class="mb-8">
+    <h2 class="mb-2 text-base">{% translate "Submissions with an issue" %}</h2>
+    {% if issues %}
+      <ul class="divide-y divide-stone-200 text-sm">
+        {% for submission in issues %}
+          <li class="py-2"><a href="{% url 'staff:submission' submission.pk %}">{{ submission.updated_at|date:"DATETIME_FORMAT" }}</a> · {{ submission.decision_reason }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="text-stone-500">{% translate "None." %}</p>{% endif %}
+  </section>
+  <section class="mb-8">
+    <h2 class="mb-2 text-base">{% blocktranslate %}Failed chat replies, last {{ window_days }} days{% endblocktranslate %}</h2>
+    {% if failed_runs %}
+      <table class="w-full text-left text-sm">
+        <thead class="text-stone-500"><tr><th class="py-2">{% translate "When" %}</th><th>{% translate "Error" %}</th><th>{% translate "Model" %}</th><th>{% translate "Attempt" %}</th></tr></thead>
+        <tbody class="divide-y divide-stone-200">
+          {% for run in failed_runs %}
+            <tr>
+              <td class="py-2">{% if perms.chat.view_run %}<a href="{% url 'admin:chat_run_change' run.pk %}">{{ run.created_at|date:"DATETIME_FORMAT" }}</a>{% else %}{{ run.created_at|date:"DATETIME_FORMAT" }}{% endif %}</td>
+              <td><code>{{ run.error.code }}</code> {{ run.error.message }}</td>
+              <td>{{ run.model_name|default:"—" }}</td>
+              <td>{{ run.attempt }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p class="text-stone-500">{% translate "None." %}</p>{% endif %}
+  </section>
+  <section>
+    <h2 class="mb-2 text-base">{% blocktranslate %}Failed tool calls, last {{ window_days }} days{% endblocktranslate %}</h2>
+    {% if failed_tools %}
+      <ul class="divide-y divide-stone-200 text-sm">
+        {% for invocation in failed_tools %}
+          <li class="py-2">{{ invocation.created_at|date:"DATETIME_FORMAT" }} · <code>{{ invocation.tool_name }}</code>{% if invocation.provider %} ({{ invocation.provider }}){% endif %} · {{ invocation.error }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="text-stone-500">{% translate "None." %}</p>{% endif %}
+  </section>
+{% endblock content %}

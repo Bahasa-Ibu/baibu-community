@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Staff" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Staff" %}</h1>
+  {% include "staff/_nav.html" %}
+  <div class="grid gap-4 sm:grid-cols-2">
+    <a href="{% url 'staff:submissions' %}?status=needs_review" class="card no-underline hover:no-underline">
+      <p class="text-3xl font-semibold text-stone-900">{{ needs_review }}</p>
+      <p class="text-stone-700">{% translate "Submissions to review" %}</p>
+    </a>
+    <a href="{% url 'staff:flags' %}" class="card no-underline hover:no-underline">
+      <p class="text-3xl font-semibold text-stone-900">{{ open_flags }}</p>
+      <p class="text-stone-700">{% translate "Reported chat replies" %}</p>
+    </a>
+    <a href="{% url 'staff:submissions' %}?status=issue" class="card no-underline hover:no-underline">
+      <p class="text-3xl font-semibold text-stone-900">{{ issues }}</p>
+      <p class="text-stone-700">{% translate "Submissions with a processing issue" %}</p>
+    </a>
+    <a href="{% url 'staff:errors' %}" class="card no-underline hover:no-underline">
+      <p class="text-3xl font-semibold text-stone-900">{{ failed_runs }} / {{ failed_tools }}</p>
+      <p class="text-stone-700">{% blocktranslate %}Failed chat replies / tool calls, last {{ window_days }} days{% endblocktranslate %}</p>
+    </a>
+  </div>
+{% endblock content %}

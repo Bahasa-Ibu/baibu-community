@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Review submission" %}{% endblock title %}
+{% block main %}
+  <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
+    <h1 class="mb-4">{% translate "Review submission" %}</h1>
+    {% include "staff/_nav.html" %}
+    <dl class="card mb-6 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+      <div><dt class="text-stone-500">{% translate "Status" %}</dt><dd><span class="status status-{{ submission.status }}">{{ submission.get_status_display }}</span></dd></div>
+      <div><dt class="text-stone-500">{% translate "Language" %}</dt><dd>{{ submission.language_code }}{% if submission.detected_language %} ({% translate "detected" %} {{ submission.detected_language }}){% endif %}</dd></div>
+      <div><dt class="text-stone-500">{% translate "Consent" %}</dt><dd>{{ submission.get_consent_tier_display }}</dd></div>
+      <div><dt class="text-stone-500">{% translate "Received" %}</dt><dd>{{ submission.created_at|date:"DATETIME_FORMAT" }}</dd></div>
+      <div><dt class="text-stone-500">{% translate "Cleaner" %}</dt><dd>{{ submission.cleaner|default:"—" }}</dd></div>
+      <div><dt class="text-stone-500">{% translate "Quality" %}</dt><dd>{{ submission.quality_score|default_if_none:"—" }}</dd></div>
+      <div><dt class="text-stone-500">{% translate "Possibly toxic" %}</dt><dd>{{ submission.toxicity_detected|yesno:_("yes,no,unknown") }}</dd></div>
+      <div><dt class="text-stone-500">{% translate "Redactions" %}</dt><dd>{{ submission.redaction_count|default_if_none:"—" }}</dd></div>
+      {% if submission.decision_reason %}<div class="sm:col-span-4"><dt class="text-stone-500">{% translate "Reason" %}</dt><dd>{{ submission.decision_reason }}</dd></div>{% endif %}
+      {% if submission.reviewed_by %}<div class="sm:col-span-4"><dt class="text-stone-500">{% translate "Decided" %}</dt><dd>{{ submission.reviewed_by }} · {{ submission.reviewed_at|date:"DATETIME_FORMAT" }}</dd></div>{% endif %}
+    </dl>
+    <div class="mb-6 grid gap-4 md:grid-cols-2">
+      <section class="card">
+        <h2 class="mb-2 text-base">{% translate "Cleaned text" %}</h2>
+        {% if clean_text is not None %}<p class="whitespace-pre-line">{{ clean_text }}</p>{% else %}<p class="text-stone-500">{% translate "Not cleaned yet." %}</p>{% endif %}
+      </section>
+      <section class="card">
+        <h2 class="mb-2 text-base">{% translate "Text as submitted" %}</h2>
+        {% if raw_text is not None %}<p class="whitespace-pre-line">{{ raw_text }}</p>{% else %}<p class="text-red-700">{% translate "The stored text is missing." %}</p>{% endif %}
+      </section>
+    </div>
+    {% if form.fields.decision.choices %}
+      <form method="post" class="card max-w-2xl">
+        {% csrf_token %}
+        {% if form.decision.errors %}<div class="errorlist">{{ form.decision.errors }}</div>{% endif %}
+        <fieldset class="mb-4 flex flex-wrap gap-3">
+          <legend class="mb-2 font-semibold">{{ form.decision.label }}</legend>
+          {% for radio in form.decision %}
+            <label class="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 font-normal">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+          {% endfor %}
+        </fieldset>
+        {{ form.staff_notes.as_field_group }}
+        <button type="submit" class="btn-primary">{% if in_queue %}{% translate "Save and next" %}{% else %}{% translate "Save" %}{% endif %}</button>
+      </form>
+    {% endif %}
+  </main>
+{% endblock main %}

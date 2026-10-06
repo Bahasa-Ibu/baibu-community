@@ -16,6 +16,9 @@
               </ol>
             </div>
           {% endif %}
+          {% if message.role == 'assistant' %}
+            <div class="mt-2 text-right text-xs"><a href="{% url 'chat:report' message.pk %}" class="text-stone-500">{% translate "Report" %}</a></div>
+          {% endif %}
         </div>
       </div>
       {% if item.failed_run %}
