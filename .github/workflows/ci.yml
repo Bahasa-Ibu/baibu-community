@@ -32,9 +32,15 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgres://baibu:baibu@localhost:5432/baibu
+      # The storage tests also run against an S3-compatible server.
+      S3_TEST_ENDPOINT_URL: http://localhost:8333
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Start an S3-compatible server (SeaweedFS)
+        run: |
+          docker run -d --name s3 -p 8333:8333 chrislusf/seaweedfs:3.97 server -s3 -dir=/data -ip.bind=0.0.0.0
+          timeout 60 sh -c 'until curl -s -o /dev/null http://localhost:8333/; do sleep 1; done'
       - name: Check for missing migrations
         run: uv run --frozen python manage.py makemigrations --check --dry-run --settings=config.settings.test
       - name: Tests with coverage

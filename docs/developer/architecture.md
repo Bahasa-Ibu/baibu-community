@@ -25,16 +25,16 @@ flowchart LR
 | Celery worker | Runs background tasks | BSD-3-Clause |
 | Celery beat | Schedules periodic tasks (`CELERY_BEAT_SCHEDULE`) | BSD-3-Clause |
 
-Every service is open source and needs no account with a third party. Later
-stages add object storage (the local filesystem, or any S3-compatible server)
-and a language-model endpoint reached through LiteLLM, which the deployment
-chooses.
+Every service is open source and needs no account with a third party.
+Files live on the local filesystem or on any S3-compatible object store
+([File storage](storage.md)). Later stages add a language-model endpoint
+reached through LiteLLM, which the deployment chooses.
 
 ## Django apps
 
 | App | Responsibility |
 | --- | --- |
-| `baibu.core` | Platform settings exposed to templates (`platform` context), language configuration, the `/health/` endpoint, the worker heartbeat task, and keeping the Site record in line with the platform name and domain. |
+| `baibu.core` | Platform settings exposed to templates (`platform` context), language configuration, the file storage interface, the `/health/` endpoint, the worker heartbeat task, and keeping the Site record in line with the platform name and domain. |
 | `baibu.users` | The user model (email sign-in, one `name` field), profile completion, consent history, account deletion requests, and the admin for all three. |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 

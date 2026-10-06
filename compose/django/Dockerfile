@@ -48,7 +48,7 @@ COPY compose/django/entrypoint compose/django/start compose/django/celery-worker
 RUN DATABASE_URL="sqlite://:memory:" DJANGO_SETTINGS_MODULE=config.settings.test python manage.py collectstatic --noinput \
     && DATABASE_URL="sqlite://:memory:" DJANGO_SETTINGS_MODULE=config.settings.test python manage.py compilemessages --ignore=/venv \
     && addgroup --system app && adduser --system --ingroup app app \
-    && mkdir -p var/media && chown -R app:app var
+    && mkdir -p var/media var/private && chown -R app:app var
 USER app
 ENTRYPOINT ["entrypoint"]
 CMD ["start"]
