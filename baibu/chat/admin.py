@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
+from .models import AudioClip
 from .models import ChatFlag
 from .models import Conversation
 from .models import ConversationEvent
@@ -42,6 +43,14 @@ class ToolInvocationInline(ReadOnlyInline):
     readonly_fields = fields
 
 
+class AudioClipInline(ReadOnlyInline):
+    """Metadata only: recordings are not played in the admin."""
+
+    model = AudioClip
+    fields = ("created_at", "status", "attempt", "content_type", "size_bytes", "duration_seconds", "provider", "error")
+    readonly_fields = fields
+
+
 class EventInline(ReadOnlyInline):
     model = ConversationEvent
     fields = ("created_at", "type", "payload")
@@ -55,7 +64,7 @@ class ConversationAdmin(admin.ModelAdmin):
     search_fields = ("id", "user__email", "title")
     date_hierarchy = "last_activity_at"
     readonly_fields = ("id", "user", "title", "language_code", "consent_tier", "created_at", "last_activity_at")
-    inlines = (MessageInline, RunInline, EventInline)
+    inlines = (MessageInline, AudioClipInline, RunInline, EventInline)
 
     def has_add_permission(self, request):
         return False

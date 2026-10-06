@@ -245,6 +245,26 @@ the staff queues.
 - Prompt versions cannot be edited once saved; one version per name is
   active. Conversation events cannot be edited.
 
+**AudioClip** (voice messages). A recording attached to a user message.
+
+- Voice input exists only when a speech-to-text provider is configured;
+  otherwise there is no record button and the voice pages return 404.
+- Recordings larger than `CHAT_VOICE_MAX_BYTES`, empty, or in a format not
+  in `CHAT_VOICE_CONTENT_TYPES` are refused and nothing is stored.
+- The same idempotency key sent twice stores one recording and creates one
+  message.
+- Statuses: `pending`, `transcribing`, `transcribed`, `failed`. A clip is
+  transcribed at most once per attempt; a transcript arriving after the clip
+  was failed is discarded.
+- While a clip is `pending` or `transcribing`, the conversation counts as
+  busy: no other send or retry is accepted.
+- On success the transcript becomes the message content and exactly one
+  run is queued for it. On failure no run is created; the user can retry up
+  to `CHAT_MAX_ATTEMPTS` attempts or type instead, and failed voice messages
+  are not sent to the model.
+- Only the owner can play back or retry a recording. Deleting the message,
+  conversation or account deletes the stored recording.
+
 ## Sample test cases
 
 IDs use the area prefix and a number. "Planned" cases are written when the
@@ -283,6 +303,13 @@ feature lands.
 | TC-L10N-06 | Translations | Two published versions | Restore version 1 | Version 3 is live with version 1's translations and records that it restores version 1. The draft still has the newer work. |
 | TC-L10N-07 | Translations | A message with a `%(name)s` placeholder | Save a translation using `%(other)s` | The translation is refused with an explanation, the typed text is kept on the page, and the draft is unchanged. |
 | TC-L10N-08 | Translations | Two translators open the same message | Both save different translations | The second save does not overwrite the first; the page says the message was changed by someone else. |
+| TC-VOI-01 | Voice message | Mock speech-to-text provider. Signed-in user with chat consent and an open conversation. | Upload a synthetic recording containing `[say:When is the next market day?]` as `audio/webm`, then run the transcription task | One AudioClip, status `transcribed`, its audio in private storage under `chat/audio/`. The user message reads "When is the next market day?" and has the voice label. One Run is queued for it. Events: `audio_received`, `transcription_completed`, `message_sent`, `run_queued`. |
+| TC-VOI-02 | Voice message | As TC-VOI-01, with a recording containing `[stt-fail]` and `CHAT_MAX_ATTEMPTS=2` | 1. Upload and transcribe. 2. Try again. 3. Type a message. | The clip is `failed` with the error recorded and no Run. The retry makes attempt 2; after it fails no retry is offered. The typed message is accepted and the failed voice message is not in the model's context. |
+| TC-VOI-03 | Voice message | As TC-VOI-01 | Upload a recording, then send a typed message before it is transcribed | The typed message is refused with "Please wait for the reply to your last message." |
+| TC-VOI-04 | Voice message | As TC-VOI-01 | Upload 101 bytes with `CHAT_VOICE_MAX_BYTES=100`, then a `text/html` file | Both are refused with a message. No AudioClip and nothing in storage. |
+| TC-VOI-05 | Voice message | A transcribed voice message | Delete the conversation (or the account) | The AudioClip is gone and its recording no longer exists in storage. |
+| TC-VOI-06 | Voice message | Another user's voice message | Request its playback and retry URLs, and upload to their conversation | All return 404. |
+| TC-VOI-07 | Voice message | `CHAT_STT_PROVIDER` empty (default) | Open a conversation and post to the voice URLs | No record button; the voice URLs return 404. Typed chat works as before. |
 
 ## Pull request workflow
 

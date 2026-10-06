@@ -37,7 +37,7 @@ reached through LiteLLM, which the deployment chooses.
 | `baibu.core` | Platform settings exposed to templates (`platform` context), language configuration, the file storage interface, the `/health/` endpoint, the worker heartbeat task, and keeping the Site record in line with the platform name and domain. |
 | `baibu.users` | The user model (email sign-in, optional phone sign-in, one `name` field), profile completion, consent history, account deletion requests, the messaging provider interface for text messages, and the admin. |
 | `baibu.submissions` | Text contributions: the submission form and list, the cleaning task and pluggable cleaners, and the admin used for review. See [Submissions and cleaning](submissions.md). |
-| `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants and the audit trail; the Celery tasks that produce replies. See [Assistant chat](chat.md). |
+| `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants, voice messages and the audit trail; the Celery tasks that transcribe voice messages and produce replies. See [Assistant chat](chat.md). |
 | `baibu.notifications` | The in-app inbox, the unread count in the navigation and the `notify()` service other apps call. See [Notifications](notifications.md). |
 | `baibu.staff` | The staff area: review queues for submissions and reported chat replies, and processing errors. No models of its own. See [Staff review](staff.md). |
 | `baibu.localization` | Interface translations edited and published from the site: source string extraction, drafts, publishing with an audit trail, and loading published catalogues into running processes. See [Translations](translations.md). |
@@ -98,6 +98,7 @@ erDiagram
     Conversation ||--o{ ConversationEvent : "audit trail"
     Run ||--o{ ToolInvocation : calls
     Message ||--o{ ChatFlag : "reported in"
+    Message ||--o| AudioClip : "voice recording"
     Conversation {
         uuid id
         string title
@@ -123,6 +124,17 @@ erDiagram
         string reason "harmful, incorrect, other"
         string status "open, confirmed, dismissed"
         datetime decided_at
+    }
+    AudioClip {
+        uuid id
+        string storage_key "private storage"
+        string content_type
+        int size_bytes
+        float duration_seconds
+        string status "pending, transcribing, transcribed, failed"
+        int attempt
+        string provider
+        json error
     }
     ToolInvocation {
         uuid id
@@ -235,6 +247,10 @@ the receipt number, source and time, never personal details.
   `baibu.chat.tasks.sweep_runs` every minute to recover stuck replies.
 - Before each Celery task, the worker loads newly published translations in
   the same way, so emails sent from tasks use them.
+- Sending a voice message queues `baibu.chat.tasks.transcribe_audio`, which
+  queues `execute_run` once the transcript is in; beat runs
+  `baibu.chat.tasks.sweep_transcriptions` every minute to recover stuck
+  transcriptions.
 - Celery beat sends `baibu.core.tasks.heartbeat` every minute. The worker
   stores the time in the cache, and `/health/` reports the worker as `ok`,
   `stale` or `unknown`. `/health/` returns HTTP 503 only if the database or
@@ -266,5 +282,7 @@ never prefixed.
 | `/translations/` | Translations overview (translators only) |
 | `/translations/<code>/` | Translate one language: edit, upload, download, publish |
 | `/translations/<code>/history/` | Published versions and restore |
+| `/chat/voice/`, `/chat/<id>/voice/` | Voice message upload (only with `CHAT_STT_PROVIDER` set) |
+| `/chat/audio/<id>/` | Play back one's own recording |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |
 | `/health/` | Health check (JSON) |

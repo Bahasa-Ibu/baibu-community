@@ -13,4 +13,8 @@ urlpatterns = [
     path("<uuid:pk>/delete/", views.delete_view, name="delete"),
     path("runs/<uuid:run_id>/retry/", views.retry_view, name="retry"),
     path("replies/<uuid:message_id>/report/", views.report_view, name="report"),
+    path("voice/", views.new_voice_view, name="voice_new"),
+    path("<uuid:pk>/voice/", views.voice_view, name="voice"),
+    path("audio/<uuid:clip_id>/", views.audio_view, name="audio"),
+    path("audio/<uuid:clip_id>/retry/", views.retry_voice_view, name="voice_retry"),
 ]

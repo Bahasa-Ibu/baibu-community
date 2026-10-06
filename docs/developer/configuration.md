@@ -117,6 +117,15 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_SEARCH_PROVIDER` | empty (no search) | Dotted path of a `SearchProvider` subclass for the `internet_search` tool, e.g. `baibu.chat.search.MockSearchProvider`. |
 | `CHAT_SEARCH_MAX_RESULTS` | `5` | Results per search. |
 | `CHAT_MAX_TOOL_ROUNDS` | `2` | Rounds of tool calls before the model must answer. |
+| `CHAT_STT_PROVIDER` | empty (no voice input) | Dotted path of a `SpeechToText` subclass for voice messages: `baibu.chat.speech.LiteLLMSpeechToText`, `baibu.chat.speech.MockSpeechToText` (made-up transcripts) or your own. Empty turns voice input off. |
+| `CHAT_STT_MODEL` | empty | `LiteLLMSpeechToText`: a transcription model name LiteLLM accepts, e.g. `openai/<model>` for an OpenAI-compatible server. |
+| `CHAT_STT_API_BASE` | empty | `LiteLLMSpeechToText`: endpoint URL, if the model needs one. |
+| `CHAT_STT_API_KEY_ENV` | empty | `LiteLLMSpeechToText`: **name** of the environment variable that holds the API key (the key itself is never a setting). |
+| `CHAT_STT_TIMEOUT` | `60` | `LiteLLMSpeechToText`: seconds to wait for a transcript. |
+| `CHAT_STT_PARAMETERS` | `{}` | `LiteLLMSpeechToText`: extra arguments for every call, as JSON, e.g. `{"language": "sw"}`. |
+| `CHAT_VOICE_MAX_BYTES` | `10485760` (10 MiB) | Largest recording accepted. Set your reverse proxy's upload limit to match. |
+| `CHAT_VOICE_MAX_SECONDS` | `120` | The browser stops recording and sends after this many seconds. |
+| `CHAT_VOICE_CONTENT_TYPES` | `audio/webm,audio/ogg,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav` | Audio formats accepted for upload (comma-separated). |
 
 ## Notifications
 

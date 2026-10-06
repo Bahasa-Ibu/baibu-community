@@ -5,6 +5,11 @@ Run is executed by a Celery task once committed. Sends are idempotent: the
 same key returns the same message and run. A conversation has at most one
 active run at a time. A failed run can be retried, which creates a new run
 for the same message, up to ``CHAT_MAX_ATTEMPTS`` per message.
+
+A voice send stores the recording, creates the user's message empty and
+queues transcription; the transcript then becomes the message and the reply
+is queued as for a typed message. While transcription is pending the
+conversation is busy, as it is while a reply is being written.
 """
 
 import json
@@ -21,10 +26,13 @@ from django.template.loader import get_template
 from django.utils import timezone
 from django.utils.translation import get_language_info
 
+from baibu.core import storage
 from baibu.users.consent import consent_state
 
 from . import llm
+from . import speech
 from . import tools
+from .models import AudioClip
 from .models import Conversation
 from .models import ConversationEvent
 from .models import Message
@@ -48,6 +56,10 @@ class RetryNotAllowedError(ChatError):
     pass
 
 
+BUSY_MESSAGE = "Please wait for the reply to your last message."
+AUDIO_AREA = "chat/audio"
+
+
 def record_event(*, conversation, type: str, run=None, message=None, **payload) -> ConversationEvent:  # noqa: A002
     return ConversationEvent.objects.create(
         conversation=conversation, run=run, message=message, type=type, payload=payload
@@ -67,6 +79,32 @@ def _enqueue(run: Run) -> None:
     transaction.on_commit(lambda: execute_run.delay(str(run.pk)))
 
 
+def is_busy(conversation: Conversation) -> bool:
+    """A reply is being written, or a voice message is being transcribed."""
+    return (
+        conversation.runs.filter(status__in=Run.ACTIVE_STATUSES).exists()
+        or conversation.audio_clips.filter(status__in=AudioClip.ACTIVE_STATUSES).exists()
+    )
+
+
+def _queue_reply(conversation: Conversation, message: Message, *, via: str = "text") -> Run:
+    """Queue the first run for a user message whose content is final. Call
+    inside a transaction holding the conversation's row lock."""
+    run = Run.objects.create(
+        conversation=conversation, triggering_message=message, idempotency_key=f"{message.idempotency_key}:1"
+    )
+    record_event(
+        conversation=conversation, type="message_sent", message=message, characters=len(message.content), via=via
+    )
+    record_event(conversation=conversation, type="run_queued", run=run, message=message, attempt=1)
+    if not conversation.title:
+        conversation.title = message.content.splitlines()[0][:80]
+    conversation.last_activity_at = timezone.now()
+    conversation.save(update_fields=["title", "last_activity_at"])
+    _enqueue(run)
+    return run
+
+
 def send_message(*, conversation: Conversation, content: str, idempotency_key: str) -> tuple[Message, Run]:
     """Add the user's message and queue a reply. Safe to call twice with one key."""
     content = content.strip()
@@ -75,22 +113,12 @@ def send_message(*, conversation: Conversation, content: str, idempotency_key: s
         existing = conversation.messages.filter(idempotency_key=idempotency_key).first()
         if existing is not None:
             return existing, existing.runs.order_by("-created_at").first()
-        if conversation.runs.filter(status__in=Run.ACTIVE_STATUSES).exists():
-            msg = "Please wait for the reply to your last message."
-            raise ConversationBusyError(msg)
+        if is_busy(conversation):
+            raise ConversationBusyError(BUSY_MESSAGE)
         message = Message.objects.create(
             conversation=conversation, role=Message.Role.USER, content=content, idempotency_key=idempotency_key
         )
-        run = Run.objects.create(
-            conversation=conversation, triggering_message=message, idempotency_key=f"{idempotency_key}:1"
-        )
-        record_event(conversation=conversation, type="message_sent", message=message, characters=len(content))
-        record_event(conversation=conversation, type="run_queued", run=run, message=message, attempt=1)
-        if not conversation.title:
-            conversation.title = content.splitlines()[0][:80]
-        conversation.last_activity_at = timezone.now()
-        conversation.save(update_fields=["title", "last_activity_at"])
-        _enqueue(run)
+        run = _queue_reply(conversation, message)
     return message, run
 
 
@@ -108,9 +136,8 @@ def retry_run(run: Run) -> Run:
         if run.attempt >= settings.CHAT_MAX_ATTEMPTS:
             msg = "This message has been tried too many times."
             raise RetryNotAllowedError(msg)
-        if conversation.runs.filter(status__in=Run.ACTIVE_STATUSES).exists():
-            msg = "Please wait for the reply to your last message."
-            raise ConversationBusyError(msg)
+        if is_busy(conversation):
+            raise ConversationBusyError(BUSY_MESSAGE)
         attempt = run.attempt + 1
         new_run = Run.objects.create(
             conversation=conversation,
@@ -161,6 +188,8 @@ def build_messages(run: Run, system_prompt: str) -> list[dict]:
     """System prompt, then recent turns up to and including the triggering message."""
     history = list(
         run.conversation.messages.filter(created_at__lte=run.triggering_message.created_at)
+        # Voice messages without a transcript have no content to send.
+        .exclude(audio__status__in=[*AudioClip.ACTIVE_STATUSES, AudioClip.Status.FAILED])
         .order_by("-created_at", "-id")
         .values("role", "content")[: settings.CHAT_CONTEXT_MESSAGES]
     )
@@ -323,6 +352,192 @@ def sweep_runs(now=None) -> dict:
             from .tasks import execute_run
 
             execute_run.delay(str(run.pk))
+            stats["requeued"] += 1
+    return stats
+
+
+# --- Voice messages ---------------------------------------------------------
+
+
+def _enqueue_transcription(clip: AudioClip) -> None:
+    from .tasks import transcribe_audio
+
+    transaction.on_commit(lambda: transcribe_audio.delay(str(clip.pk)))
+
+
+def send_voice(*, conversation: Conversation, audio: bytes, content_type: str, idempotency_key: str) -> Message:
+    """Store a recording, add an empty user message and queue transcription.
+
+    Safe to call twice with one key. Storage errors are let through and
+    nothing is recorded then.
+    """
+    with transaction.atomic():
+        conversation = Conversation.objects.select_for_update().get(pk=conversation.pk)
+        existing = conversation.messages.filter(idempotency_key=idempotency_key).first()
+        if existing is not None:
+            return existing
+        if is_busy(conversation):
+            raise ConversationBusyError(BUSY_MESSAGE)
+        clip_id = uuid.uuid7()
+        key = storage.save_bytes(
+            storage.build_key(AUDIO_AREA, f"{clip_id}.{speech.extension_for(content_type)}"), audio
+        )
+        try:
+            with transaction.atomic():
+                message = Message.objects.create(
+                    conversation=conversation, role=Message.Role.USER, content="", idempotency_key=idempotency_key
+                )
+                clip = AudioClip.objects.create(
+                    id=clip_id,
+                    conversation=conversation,
+                    message=message,
+                    storage_key=key,
+                    content_type=content_type,
+                    size_bytes=len(audio),
+                )
+                record_event(
+                    conversation=conversation,
+                    type="audio_received",
+                    message=message,
+                    clip=str(clip.pk),
+                    content_type=content_type,
+                    bytes=len(audio),
+                )
+                conversation.last_activity_at = timezone.now()
+                conversation.save(update_fields=["last_activity_at"])
+        except Exception:
+            storage.delete(key)
+            raise
+        _enqueue_transcription(clip)
+    return message
+
+
+def retry_transcription(clip: AudioClip) -> AudioClip:
+    """Queue another attempt at a failed transcription."""
+    with transaction.atomic():
+        conversation = Conversation.objects.select_for_update().get(pk=clip.conversation_id)
+        clip = AudioClip.objects.get(pk=clip.pk)
+        if clip.status != AudioClip.Status.FAILED:
+            msg = "Only a failed transcription can be retried."
+            raise RetryNotAllowedError(msg)
+        if clip.attempt >= settings.CHAT_MAX_ATTEMPTS:
+            msg = "This message has been tried too many times."
+            raise RetryNotAllowedError(msg)
+        if is_busy(conversation):
+            raise ConversationBusyError(BUSY_MESSAGE)
+        clip.status = AudioClip.Status.PENDING
+        clip.attempt += 1
+        clip.error = {}
+        clip.queued_at = timezone.now()
+        clip.started_at = clip.completed_at = None
+        clip.save()
+        record_event(
+            conversation=conversation,
+            type="transcription_retried",
+            message=clip.message,
+            clip=str(clip.pk),
+            attempt=clip.attempt,
+        )
+        conversation.last_activity_at = timezone.now()
+        conversation.save(update_fields=["last_activity_at"])
+        _enqueue_transcription(clip)
+    return clip
+
+
+def transcribe(clip_id) -> AudioClip | None:
+    """Transcribe a pending clip; on success queue the reply."""
+    claimed = AudioClip.objects.filter(pk=clip_id, status=AudioClip.Status.PENDING).update(
+        status=AudioClip.Status.TRANSCRIBING, started_at=timezone.now()
+    )
+    if not claimed:
+        return None
+    clip = AudioClip.objects.select_related("conversation", "message").get(pk=clip_id)
+    provider = speech.get_provider()
+    try:
+        if provider is None:
+            msg = "Voice input is not configured."
+            raise speech.TranscriptionError(msg, code="not_configured")
+        audio = storage.read_bytes(clip.storage_key)
+        if audio is None:
+            msg = "The recording is missing from storage."
+            raise speech.TranscriptionError(msg, code="missing_audio")
+        transcript = provider.transcribe(
+            audio, content_type=clip.content_type, language_code=clip.conversation.language_code
+        )
+    except speech.TranscriptionError as exc:
+        return fail_transcription(clip, code=exc.code, message=str(exc))
+    except Exception as exc:
+        logger.exception("Transcription of %s failed", clip.pk)
+        return fail_transcription(clip, code="internal_error", message=type(exc).__name__)
+    text = " ".join(transcript.text.split())[: settings.CHAT_MAX_MESSAGE_CHARACTERS]
+    if not text:
+        return fail_transcription(clip, code="no_speech", message="No speech was recognised.")
+    with transaction.atomic():
+        conversation = Conversation.objects.select_for_update().get(pk=clip.conversation_id)
+        locked = AudioClip.objects.select_for_update().get(pk=clip.pk)
+        if locked.status != AudioClip.Status.TRANSCRIBING:
+            # Timed out and failed by the sweeper meanwhile; keep that outcome.
+            return locked
+        clip.status = AudioClip.Status.TRANSCRIBED
+        clip.provider = (transcript.provider or getattr(provider, "name", ""))[:128]
+        clip.language = transcript.language[:24]
+        clip.duration_seconds = transcript.duration
+        clip.completed_at = timezone.now()
+        clip.save()
+        message = clip.message
+        message.content = text
+        message.save(update_fields=["content"])
+        record_event(
+            conversation=conversation,
+            type="transcription_completed",
+            message=message,
+            clip=str(clip.pk),
+            provider=clip.provider,
+            characters=len(text),
+            duration_seconds=clip.duration_seconds,
+        )
+        _queue_reply(conversation, message, via="voice")
+    return clip
+
+
+def fail_transcription(clip: AudioClip, *, code: str, message: str) -> AudioClip:
+    with transaction.atomic():
+        locked = AudioClip.objects.select_for_update().get(pk=clip.pk)
+        if locked.status in (AudioClip.Status.TRANSCRIBED, AudioClip.Status.FAILED):
+            return locked
+        clip.status = AudioClip.Status.FAILED
+        clip.error = {"code": code, "message": message[:500]}
+        clip.completed_at = timezone.now()
+        clip.save()
+        record_event(
+            conversation=clip.conversation,
+            type="transcription_failed",
+            message=clip.message,
+            clip=str(clip.pk),
+            code=code,
+        )
+    logger.warning("Transcription of %s failed: %s", clip.pk, code)
+    return clip
+
+
+def sweep_transcriptions(now=None) -> dict:
+    """Fail transcriptions stuck too long and re-send pending ones whose task was lost."""
+    now = now or timezone.now()
+    timeout = timedelta(seconds=settings.CHAT_RUN_TIMEOUT_SECONDS)
+    stats = {"failed": 0, "requeued": 0}
+    stuck = AudioClip.objects.filter(status=AudioClip.Status.TRANSCRIBING, started_at__lt=now - timeout)
+    for clip in stuck.select_related("conversation"):
+        if fail_transcription(clip, code="timeout", message="No transcript in time.").error.get("code") == "timeout":
+            stats["failed"] += 1
+    lost = AudioClip.objects.filter(status=AudioClip.Status.PENDING, queued_at__lt=now - timeout)
+    for clip in lost.select_related("conversation"):
+        if clip.queued_at < now - 3 * timeout:
+            fail_transcription(clip, code="not_started", message="The transcription was never started.")
+            stats["failed"] += 1
+        else:
+            from .tasks import transcribe_audio
+
+            transcribe_audio.delay(str(clip.pk))
             stats["requeued"] += 1
     return stats
 
