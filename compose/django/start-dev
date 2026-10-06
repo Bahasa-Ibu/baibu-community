@@ -1,4 +1,6 @@
 #!/bin/bash
 set -o errexit -o pipefail -o nounset
 python manage.py migrate --noinput
+# New interface strings after an upgrade are merged into translation drafts.
+python manage.py update_translation_sources || echo "Could not update translation sources; see the error above."
 exec python manage.py runserver 0.0.0.0:8000

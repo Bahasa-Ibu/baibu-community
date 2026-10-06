@@ -56,9 +56,13 @@ PLATFORM_EXTRA_LANGUAGES = env("PLATFORM_EXTRA_LANGUAGES", default="")
 register_extra_languages(PLATFORM_EXTRA_LANGUAGES)
 LANGUAGE_CODE = env("PLATFORM_DEFAULT_LANGUAGE", default="en")
 LANGUAGES = build_languages(env.list("PLATFORM_LANGUAGES", default=["en"]), default=LANGUAGE_CODE)
-# English is the source language, so the project ships no catalogues; a
-# deployment keeps its translations in DEPLOYMENT_DIR/locale.
-LOCALE_PATHS = [str(DEPLOYMENT_DIR / "locale")]
+# English is the source language, so the project ships no catalogues. A
+# deployment's translations come from two places: catalogues its translators
+# publish from the /translations/ pages (copied by each process into
+# LOCALIZATION_PUBLISHED_DIR), and .po/.mo files in DEPLOYMENT_DIR/locale.
+# The first entry wins where both translate the same message.
+LOCALIZATION_PUBLISHED_DIR = Path(env("LOCALIZATION_PUBLISHED_DIR", default="") or BASE_DIR / "var" / "locale")
+LOCALE_PATHS = [str(LOCALIZATION_PUBLISHED_DIR), str(DEPLOYMENT_DIR / "locale")]
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -95,6 +99,7 @@ LOCAL_APPS = [
     "baibu.chat",
     "baibu.notifications",
     "baibu.staff",
+    "baibu.localization",
     "baibu.theme",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -127,6 +132,8 @@ AUTH_PASSWORD_VALIDATORS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Loads newly published translations; must come before LocaleMiddleware.
+    "baibu.localization.middleware.TranslationSyncMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -386,3 +393,11 @@ CHAT_MAX_TOOL_ROUNDS = env.int("CHAT_MAX_TOOL_ROUNDS", default=2)
 NOTIFICATIONS_ENABLED = env.bool("NOTIFICATIONS_ENABLED", default=True)
 # Read notifications older than this are deleted daily.
 NOTIFICATIONS_RETENTION_DAYS = env.int("NOTIFICATIONS_RETENTION_DAYS", default=180)
+
+# TRANSLATIONS
+# ------------------------------------------------------------------------------
+# Load translations published from the /translations/ pages into every web and
+# worker process. Turn off only if you manage catalogues as files.
+LOCALIZATION_SYNC = env.bool("LOCALIZATION_SYNC", default=True)
+# How often each process checks (through the cache) for a new publication.
+LOCALIZATION_SYNC_SECONDS = env.int("LOCALIZATION_SYNC_SECONDS", default=10)

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% blocktranslate with language=language_name %}Translate: {{ language }}{% endblocktranslate %}{% endblock title %}
+{% block main %}
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
+    <p class="mb-2 text-sm"><a href="{% url 'localization:index' %}">← {% translate "Translations" %}</a></p>
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h1>{{ language_name }} <span class="text-base font-normal text-stone-500">{{ language_code }}</span></h1>
+        <p class="text-sm text-stone-600">
+          {% blocktranslate with translated=counts.translated total=counts.total percent=counts.percent %}{{ translated }} of {{ total }} translated ({{ percent }}%).{% endblocktranslate %}
+          {% if publication %}
+            {% blocktranslate with version=publication.version date=publication.published_at|date:"DATETIME_FORMAT" %}Live: version {{ version }}, published {{ date }}.{% endblocktranslate %}
+          {% else %}
+            {% translate "Nothing published yet." %}
+          {% endif %}
+          {% if unpublished %}<span class="status status-needs_review">{% translate "Unpublished changes" %}</span>{% endif %}
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="{% url 'localization:history' language_code %}" class="btn-secondary">{% translate "Published versions" %}</a>
+        <form method="post" action="{% url 'localization:publish' language_code %}" class="m-0"
+              onsubmit="return confirm('{% translate "Publish the draft? Everyone will see these translations within a few seconds." as question %}{{ question|escapejs }}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-primary">{% translate "Publish draft" %}</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <nav class="flex flex-wrap gap-2 text-sm" aria-label="{% translate 'Filter' %}">
+        {% for value, label, count in states %}
+          <a href="?state={{ value }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}"
+             class="{% if value == state %}btn-primary{% else %}btn-secondary{% endif %}"
+             {% if value == state %}aria-current="page"{% endif %}>{{ label }} ({{ count }})</a>
+        {% endfor %}
+      </nav>
+      <form method="get" class="m-0 flex items-center gap-2" role="search">
+        <input type="hidden" name="state" value="{{ state }}">
+        <label for="search" class="sr-only">{% translate "Search" %}</label>
+        <input type="search" id="search" name="q" value="{{ query }}" placeholder="{% translate 'Search' %}"
+               class="block w-56 rounded-lg border-stone-300 text-sm shadow-sm focus:border-brand focus:ring-brand">
+        <button type="submit" class="btn-secondary">{% translate "Search" %}</button>
+      </form>
+    </div>
+
+    {% if rows %}
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        {% for row in rows %}
+          <div class="card {% if row.error %}border-red-300{% endif %}" id="entry-{{ row.key }}">
+            <input type="hidden" name="key" value="{{ row.key }}">
+            <input type="hidden" name="seen-{{ row.key }}" value="{{ row.seen }}">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <span class="status status-{{ row.state }}">
+                {% if row.state == "translated" %}{% translate "Translated" %}{% elif row.state == "fuzzy" %}{% translate "Needs review" %}{% else %}{% translate "Untranslated" %}{% endif %}
+              </span>
+              {% if row.entry.msgctxt %}
+                <span class="text-xs text-stone-500">{% blocktranslate with context=row.entry.msgctxt %}Context: {{ context }}{% endblocktranslate %}</span>
+              {% endif %}
+            </div>
+            <p class="whitespace-pre-wrap font-medium text-stone-900" lang="en">{{ row.entry.msgid }}</p>
+            {% if row.entry.msgid_plural %}
+              <p class="mt-1 whitespace-pre-wrap font-medium text-stone-900" lang="en"><span class="text-xs font-normal text-stone-500">{% translate "Plural:" %}</span> {{ row.entry.msgid_plural }}</p>
+            {% endif %}
+            {% if row.entry.comment %}
+              <p class="mt-1 whitespace-pre-wrap text-sm text-stone-600">{{ row.entry.comment }}</p>
+            {% endif %}
+            {% if row.occurrences %}
+              <p class="mt-1 text-xs text-stone-500">
+                {{ row.occurrences|join:", " }}{% if row.more_occurrences %} {% blocktranslate count count=row.more_occurrences %}and {{ count }} more place{% plural %}and {{ count }} more places{% endblocktranslate %}{% endif %}
+              </p>
+            {% endif %}
+            <div class="mt-3 space-y-2">
+              {% for field in row.fields %}
+                <div class="mb-0">
+                  <label for="{{ field.name }}" class="{% if row.fields|length == 1 %}sr-only{% endif %}">{{ field.label }}</label>
+                  <textarea id="{{ field.name }}" name="{{ field.name }}" rows="{{ row.rows }}" lang="{{ language_code }}" dir="auto">{{ field.value }}</textarea>
+                </div>
+              {% endfor %}
+            </div>
+            {% if row.error %}<p class="mt-2 text-sm text-red-700" role="alert">{{ row.error }}</p>{% endif %}
+            <label class="mt-2 flex items-center gap-2 font-normal">
+              <input type="checkbox" name="fuzzy-{{ row.key }}"{% if row.fuzzy %} checked{% endif %}>
+              <span>{% translate "Needs review (not published until this is cleared)" %}</span>
+            </label>
+          </div>
+        {% endfor %}
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <button type="submit" class="btn-primary">{% translate "Save draft" %}</button>
+          {% if page.has_other_pages %}
+            <nav class="flex items-center gap-2 text-sm" aria-label="{% translate 'Pages' %}">
+              {% if page.has_previous %}
+                <a class="btn-secondary" href="?state={{ state }}&amp;q={{ query|urlencode }}&amp;page={{ page.previous_page_number }}">{% translate "Previous" %}</a>
+              {% endif %}
+              <span>{% blocktranslate with number=page.number count=page.paginator.num_pages %}Page {{ number }} of {{ count }}{% endblocktranslate %}</span>
+              {% if page.has_next %}
+                <a class="btn-secondary" href="?state={{ state }}&amp;q={{ query|urlencode }}&amp;page={{ page.next_page_number }}">{% translate "Next" %}</a>
+              {% endif %}
+            </nav>
+          {% endif %}
+        </div>
+      </form>
+    {% else %}
+      <div class="card text-stone-700">{% translate "No messages match." %}</div>
+    {% endif %}
+
+    <div class="mt-10 grid gap-6 md:grid-cols-2">
+      <div class="card">
+        <h2 class="mb-2">{% translate "Plural forms" %}</h2>
+        <form method="post" action="{% url 'localization:plural_forms' language_code %}">
+          {% csrf_token %}
+          {% include "includes/form_fields.html" with form=plural_form %}
+          <button type="submit" class="btn-secondary">{% translate "Save plural forms" %}</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2 class="mb-2">{% translate "Work offline" %}</h2>
+        <p class="mb-4 text-sm text-stone-700">
+          <a href="{% url 'localization:download' language_code %}">{% translate "Download the draft as a PO file" %}</a>,
+          {% translate "translate it in any PO editor, then upload it here." %}
+        </p>
+        <form method="post" action="{% url 'localization:upload' language_code %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% include "includes/form_fields.html" with form=upload_form %}
+          <button type="submit" class="btn-secondary">{% translate "Upload" %}</button>
+        </form>
+      </div>
+    </div>
+  </main>
+{% endblock main %}

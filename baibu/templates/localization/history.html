@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% blocktranslate with language=language_name %}Published versions: {{ language }}{% endblocktranslate %}{% endblock title %}
+{% block content %}
+  <p class="mb-2 text-sm"><a href="{% url 'localization:catalogue' language_code %}">← {{ language_name }}</a></p>
+  <h1 class="mb-6">{% blocktranslate with language=language_name %}Published versions: {{ language }}{% endblocktranslate %}</h1>
+  {% if publications %}
+    <ul class="space-y-3">
+      {% for publication in publications %}
+        <li class="card">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2>{% blocktranslate with version=publication.version %}Version {{ version }}{% endblocktranslate %}</h2>
+              <p class="text-sm text-stone-600">
+                {% if publication.published_by %}
+                  {% blocktranslate with date=publication.published_at|date:"DATETIME_FORMAT" person=publication.published_by.name|default:publication.published_by.email %}Published {{ date }} by {{ person }}.{% endblocktranslate %}
+                {% else %}
+                  {% blocktranslate with date=publication.published_at|date:"DATETIME_FORMAT" %}Published {{ date }}.{% endblocktranslate %}
+                {% endif %}
+                {% blocktranslate with translated=publication.translated_count total=publication.total_count %}{{ translated }} of {{ total }} translated.{% endblocktranslate %}
+                {% if publication.restored_from %}
+                  {% blocktranslate with version=publication.restored_from.version %}A restore of version {{ version }}.{% endblocktranslate %}
+                {% endif %}
+              </p>
+            </div>
+            {% if publication == live %}
+              <span class="status status-verified">{% translate "Live" %}</span>
+            {% else %}
+              <form method="post" action="{% url 'localization:restore' language_code publication.pk %}" class="m-0"
+                    onsubmit="return confirm('{% translate "Make this version live again?" as question %}{{ question|escapejs }}');">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary">{% translate "Restore" %}</button>
+              </form>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card text-stone-700">{% translate "Nothing has been published for this language yet." %}</div>
+  {% endif %}
+{% endblock content %}

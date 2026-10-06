@@ -19,3 +19,7 @@ STORAGES = {
 }
 TEMPLATES[0]["OPTIONS"]["debug"] = True  # type: ignore[index]
 MESSAGING_PROVIDER = "baibu.users.messaging.MemoryMessagingProvider"
+
+# Tests of the translation workflow turn this on; other tests should not
+# query for publications on every request.
+LOCALIZATION_SYNC = False

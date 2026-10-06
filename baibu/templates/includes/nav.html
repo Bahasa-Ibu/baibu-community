@@ -13,6 +13,7 @@
           {% translate "Notifications" %}{% if unread_notifications %} <span class="rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">{{ unread_notifications }}</span>{% endif %}
         </a>
         <a href="{% url 'users:account' %}">{% translate "Account" %}</a>
+        {% if perms.localization.edit_translations %}<a href="{% url 'localization:index' %}">{% translate "Translations" %}</a>{% endif %}
         {% if user.is_staff %}<a href="{% url 'staff:dashboard' %}">{% translate "Staff" %}</a> <a href="{% url 'admin:index' %}">{% translate "Admin" %}</a>{% endif %}
         <form method="post" action="{% url 'account_logout' %}" class="m-0">
           {% csrf_token %}

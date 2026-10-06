@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Translations" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-2">{% translate "Translations" %}</h1>
+  <p class="mb-6 text-stone-700">
+    {% translate "Translate the words on this site into your languages. Save your work as a draft, then publish it when it is ready: published translations appear on the site within a few seconds." %}
+  </p>
+
+  <div class="card mb-6">
+    <h2 class="mb-1">{% translate "Source strings" %}</h2>
+    <p class="mb-4 text-sm text-stone-700">
+      {% if source %}
+        {% blocktranslate count count=source.entry_count with date=source.created_at|date:"DATETIME_FORMAT" %}{{ count }} message to translate, extracted {{ date }}.{% plural %}{{ count }} messages to translate, extracted {{ date }}.{% endblocktranslate %}
+      {% else %}
+        {% translate "The messages to translate have not been extracted from the code yet." %}
+      {% endif %}
+      {% translate "They are extracted again when the site starts after an upgrade; new messages are added to every draft and existing translations are kept." %}
+    </p>
+    <form method="post" action="{% url 'localization:update_sources' %}" class="m-0">
+      {% csrf_token %}
+      <button type="submit" class="btn-secondary">{% translate "Extract source strings now" %}</button>
+    </form>
+  </div>
+
+  {% if languages %}
+    <ul class="space-y-3">
+      {% for language in languages %}
+        <li class="card">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2><a href="{% url 'localization:catalogue' language.code %}">{{ language.name }}</a> <span class="text-sm font-normal text-stone-500">{{ language.code }}</span></h2>
+              <p class="text-sm text-stone-600">
+                {% if language.stats %}
+                  {% blocktranslate with translated=language.stats.translated total=language.stats.total percent=language.stats.percent %}{{ translated }} of {{ total }} translated ({{ percent }}%).{% endblocktranslate %}
+                  {% if language.stats.fuzzy %}
+                    {% blocktranslate count count=language.stats.fuzzy %}{{ count }} needs review.{% plural %}{{ count }} need review.{% endblocktranslate %}
+                  {% endif %}
+                {% else %}
+                  {% translate "Not started." %}
+                {% endif %}
+              </p>
+              <p class="text-sm text-stone-600">
+                {% if language.publication %}
+                  {% blocktranslate with version=language.publication.version date=language.publication.published_at|date:"DATETIME_FORMAT" %}Live: version {{ version }}, published {{ date }}.{% endblocktranslate %}
+                {% else %}
+                  {% translate "Nothing published yet." %}
+                {% endif %}
+              </p>
+            </div>
+            {% if language.stats and language.unpublished %}
+              <span class="status status-needs_review">{% translate "Unpublished changes" %}</span>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="card text-stone-700">
+      {% translate "This site is only in English, the language of the code. To offer another language, add it to PLATFORM_LANGUAGES." %}
+    </div>
+  {% endif %}
+{% endblock content %}

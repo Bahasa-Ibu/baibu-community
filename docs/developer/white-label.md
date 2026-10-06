@@ -57,19 +57,32 @@ The code and templates are written in English. To offer more languages:
 1. List them: `PLATFORM_LANGUAGES=sw,en` and `PLATFORM_DEFAULT_LANGUAGE=sw`.
 2. If Django does not know a language, declare it:
    `PLATFORM_EXTRA_LANGUAGES="jv:Javanese:Basa Jawa;su:Sundanese:Basa Sunda"`.
-3. Create the translation files. They are written to
-   `deployment/locale/<code>/LC_MESSAGES/django.po`:
+3. Translate the interface. There are two ways, and you can use both.
 
-    ```sh
-    docker compose run --rm django python manage.py makemessages -l sw \
-      --ignore .venv --ignore node_modules --ignore docs
-    ```
+### On the site (recommended)
 
-4. Translate the `.po` file (any PO editor works), then compile it:
+Add your translators to the `translators` group in the admin. They translate
+at `/translations/`, save drafts and publish; published translations reach
+every page, email and background task within seconds, without a code change
+or a redeploy. Drafts and published versions are kept in file storage with a
+record of who published what and when, and an earlier version can be
+restored. Strings in your own templates under `deployment/templates/` are
+included. See [Translations](translations.md).
 
-    ```sh
-    docker compose run --rm django python manage.py compilemessages --ignore .venv
-    ```
+### As files
+
+Keep `.po` files in `deployment/locale/<code>/LC_MESSAGES/django.po`:
+
+```sh
+docker compose run --rm django python manage.py makemessages -l sw \
+  --ignore .venv --ignore node_modules --ignore docs
+# translate the .po file in any PO editor, then:
+docker compose run --rm django python manage.py compilemessages --ignore .venv
+```
+
+When a language's draft is first created on the site, it starts from this
+file, so you can move to the site at any time. Where both translate a
+message, the translation published on the site wins.
 
 The default language has no URL prefix; the others get one (`/en/...`). When
 more than one language is enabled, a language switcher appears in the header.

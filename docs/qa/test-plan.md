@@ -4,10 +4,10 @@ This document describes how Baibu Community Edition is tested: the testing
 strategy, tools, coverage targets, sample test cases, the core data
 structures under test and the pull request workflow.
 
-The skeleton (stage 0), text submissions (stage 1), the assistant chat
-(stage 2, in progress) and phone sign-in (from stage 3) are built. This plan
-covers them and sets out how later stages will be tested. It is updated as
-features land.
+The skeleton (stage 0), text submissions (stage 1), most of stage 2 (chat,
+notifications, staff review, translations) and phone sign-in (from stage 3)
+are built. This plan covers them and sets out how later stages will be
+tested. It is updated as features land.
 
 ## Goals
 
@@ -203,6 +203,26 @@ the staff queues.
 - Creating a notification never fails the caller.
 - Read notifications past the retention period are deleted; unread ones
   are kept.
+**Translations.** Interface translations edited and published on the site
+([Translations](../developer/translations.md)).
+
+- Only users with the `localization.edit_translations` permission (the
+  `translators` group, or superusers) can open the translation pages or
+  change anything.
+- English is the source language; every other enabled language has one
+  draft. Extracting source strings again keeps existing translations; new
+  messages are added untranslated and removed ones become obsolete.
+- A translation whose placeholders do not match the original is refused. A
+  change saved by someone else since the page was loaded is not overwritten.
+- Translations marked as needing review are not published.
+- Each publish or restore adds a numbered version recording who, when and
+  counts; versions are never changed. The newest version of a language is
+  live; restoring makes an earlier version live as a new version and leaves
+  the draft unchanged.
+- A publication reaches every web and worker process without a restart or
+  redeploy. Published translations win over files in the deployment
+  directory; messages they leave untranslated fall back to those files.
+- Failing to load translations never fails a page or a task.
 
 **Conversation, Message and Run** (stage 2). The assistant chat.
 
@@ -255,6 +275,14 @@ feature lands.
 | TC-REV-02 | Staff review | A report of an assistant reply; two staff members open it | Both choose a decision and save | The first decision is kept. The second reviewer is told it was already decided. The reporter has one notification. |
 | TC-CHT-01 | Chat run retry | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
 | TC-CHT-02 | Chat run retry | Mocked model always raises an error | Send a message and retry up to the configured limit | Each attempt creates a Run. After the limit, no further retries are allowed and the user sees an error message. No assistant message is created. |
+| TC-L10N-01 | Translations | Languages English and a test language; no source strings yet | Extract the source strings | A template is stored with every marked string from the code and deployment templates. A draft exists for the test language and none for English. Extracting again without code changes stores nothing new. |
+| TC-L10N-02 | Translations | A draft with one translated message | Change the code (add one message, remove another) and extract again | The translation is kept, the new message is untranslated, the removed one is obsolete and hidden, and the previous draft file is deleted. |
+| TC-L10N-03 | Translations | A signed-in user without the permission; a translator | Open the translation pages; as the translator, translate a message and a plural message and save | The user without the permission gets 403 and cannot publish. The translator's draft contains both translations, one field per plural form. |
+| TC-L10N-04 | Translations | A translated draft | Publish, then load a page in the test language | A version 1 row records the translator, time and counts. The page shows the translation; `gettext` and `ngettext` return it; a message marked for review is not used. |
+| TC-L10N-05 | Translations | A published version, and a process that has not loaded it | Send a request, and run a Celery task, in that process | Both load the new version first: the page and the task use the translation. A language with no catalogue before becomes reachable at its URL prefix. |
+| TC-L10N-06 | Translations | Two published versions | Restore version 1 | Version 3 is live with version 1's translations and records that it restores version 1. The draft still has the newer work. |
+| TC-L10N-07 | Translations | A message with a `%(name)s` placeholder | Save a translation using `%(other)s` | The translation is refused with an explanation, the typed text is kept on the page, and the draft is unchanged. |
+| TC-L10N-08 | Translations | Two translators open the same message | Both save different translations | The second save does not overwrite the first; the page says the message was changed by someone else. |
 
 ## Pull request workflow
 
