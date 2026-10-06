@@ -11,6 +11,13 @@ def execute_run(run_id: str) -> str:
 
 
 @shared_task(ignore_result=True)
+def tag_conversations() -> int:
+    from .tagging import tag_due
+
+    return tag_due()
+
+
+@shared_task(ignore_result=True)
 def sweep_runs() -> dict:
     return services.sweep_runs()
 

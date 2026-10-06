@@ -6,11 +6,13 @@ from .models import AudioClip
 from .models import ChatFlag
 from .models import Conversation
 from .models import ConversationEvent
+from .models import ConversationTag
 from .models import Message
 from .models import ModelVariant
 from .models import Prompt
 from .models import Run
 from .models import ToolInvocation
+from .models import Topic
 
 
 class ReadOnlyInline(admin.TabularInline):
@@ -51,6 +53,16 @@ class AudioClipInline(ReadOnlyInline):
     readonly_fields = fields
 
 
+class TagInline(ReadOnlyInline):
+    model = ConversationTag
+    fields = ("topic_list", "language", "intent", "tagger", "tagged_at", "error")
+    readonly_fields = fields
+
+    @admin.display(description=_("Topics"))
+    def topic_list(self, obj):
+        return ", ".join(topic.label for topic in obj.topics.all()) or "—"
+
+
 class EventInline(ReadOnlyInline):
     model = ConversationEvent
     fields = ("created_at", "type", "payload")
@@ -60,11 +72,11 @@ class EventInline(ReadOnlyInline):
 @admin.register(Conversation)
 class ConversationAdmin(admin.ModelAdmin):
     list_display = ("__str__", "user", "language_code", "consent_tier", "last_activity_at")
-    list_filter = ("consent_tier", "language_code")
+    list_filter = ("consent_tier", "language_code", "tag__topics", "tag__intent")
     search_fields = ("id", "user__email", "title")
     date_hierarchy = "last_activity_at"
     readonly_fields = ("id", "user", "title", "language_code", "consent_tier", "created_at", "last_activity_at")
-    inlines = (MessageInline, AudioClipInline, RunInline, EventInline)
+    inlines = (TagInline, MessageInline, AudioClipInline, RunInline, EventInline)
 
     def has_add_permission(self, request):
         return False
@@ -149,3 +161,10 @@ class ChatFlagAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return request.method in {"GET", "HEAD"} and super().has_change_permission(request, obj)
+
+
+@admin.register(Topic)
+class TopicAdmin(admin.ModelAdmin):
+    list_display = ("label", "slug", "active")
+    list_filter = ("active",)
+    prepopulated_fields = {"slug": ("label",)}

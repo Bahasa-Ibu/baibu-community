@@ -70,6 +70,35 @@ Under each assistant reply, *Report* lets the user say what is wrong
 Reports go to the staff queue described in [Staff review](staff.md); each
 user can report a reply once.
 
+## Topic tagging
+
+Tagging labels conversations with **topics**, the **language** the person
+writes in and their **intent**, for statistics and review. It is **off by
+default** (`CHAT_TAGGING_ENABLED`).
+
+- **Topics** are defined by the deployment in the admin (*Chat → Topics*):
+  a code, a label and an optional description that helps the tagger.
+  Inactive topics are not offered.
+- **Intents** come from `CHAT_TAGGING_INTENTS` (default `question`,
+  `advice`, `information`, `conversation`, `other`).
+- **When.** Every 10 minutes (`CHAT_TAGGING_INTERVAL_SECONDS`) a beat task
+  tags up to `CHAT_TAGGING_BATCH_SIZE` conversations that have been idle for
+  `CHAT_TAGGING_IDLE_MINUTES` and changed since they were last tagged. A
+  conversation has one current tagging, replaced when it is tagged again.
+- **Consent.** Only conversations whose chat consent tier is at least
+  `CHAT_TAGGING_MIN_TIER` (default `eval_only`) are tagged.
+- **Tagger.** The model in `CHAT_TAGGING_MODEL`, or the chat's default
+  model, through LiteLLM, with the template `chat/tagging_prompt.txt`
+  (overridable). It sees the first `CHAT_TAGGING_MAX_MESSAGES` messages, up
+  to `CHAT_TAGGING_MAX_CHARACTERS`, and must answer with JSON; codes not in
+  the lists are ignored. With the `mock` model, topics are matched as
+  keywords (their label or code appearing in the conversation) and a
+  question mark makes the intent `question`.
+- **Failures** are recorded on the tagging (`error`) and retried only after
+  the conversation changes.
+- Staff see the tags on the conversation in the admin and can filter
+  conversations by topic and intent.
+
 ## Models
 
 Staff manage **model variants** in the admin (*Chat → Model variants*).

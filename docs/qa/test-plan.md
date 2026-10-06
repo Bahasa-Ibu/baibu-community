@@ -4,9 +4,9 @@ This document describes how Baibu Community Edition is tested: the testing
 strategy, tools, coverage targets, sample test cases, the core data
 structures under test and the pull request workflow.
 
-The skeleton (stage 0), text submissions (stage 1), most of stage 2 (chat,
-notifications, staff review, translations) and phone sign-in (from stage 3)
-are built. This plan covers them and sets out how later stages will be
+Stages 0 to 3 are built: the skeleton, text submissions, the chat with
+review, notifications and translations, and the extensions (voice input,
+usage metrics, topic tagging, phone sign-in). This plan covers them and sets out how later stages will be
 tested. It is updated as features land.
 
 ## Goals
@@ -183,6 +183,18 @@ translations.
 - Deleting a submission, or its user, deletes its stored files.
 - A staff decision (accept or reject) records the reviewer and time and
   notifies the contributor once; a refused transition notifies nobody.
+
+**ConversationTag and Topic** (topic tagging). Optional labels on a
+conversation.
+
+- Off by default. Only conversations idle long enough, changed since their
+  last tagging, and with chat consent at least `CHAT_TAGGING_MIN_TIER` are
+  tagged.
+- Only active topics and configured intents are recorded, at most
+  `CHAT_TAGGING_MAX_TOPICS` topics; anything else the tagger returns is
+  ignored.
+- A tagging failure is recorded and not retried until the conversation
+  changes.
 
 **ChatFlag and staff review.** A user's report of an assistant reply, and
 the staff queues.
