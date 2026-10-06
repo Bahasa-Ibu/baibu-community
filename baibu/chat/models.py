@@ -291,6 +291,46 @@ class AudioClip(models.Model):
         return f"Audio {self.pk} ({self.status})"
 
 
+class Topic(models.Model):
+    """A conversation topic, defined by the deployment, for optional tagging."""
+
+    slug = models.SlugField(max_length=64, unique=True)
+    label = models.CharField(max_length=128)
+    description = models.CharField(
+        max_length=500, blank=True, help_text=_("Helps the tagger decide; not shown to users.")
+    )
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["label"]
+        verbose_name = _("Topic")
+        verbose_name_plural = _("Topics")
+
+    def __str__(self) -> str:
+        return self.label
+
+
+class ConversationTag(models.Model):
+    """The latest tagging of a conversation: topics, language and intent."""
+
+    conversation = models.OneToOneField(Conversation, on_delete=models.CASCADE, related_name="tag")
+    topics = models.ManyToManyField(Topic, blank=True, related_name="tags")
+    language = models.CharField(max_length=24, blank=True)
+    intent = models.CharField(max_length=32, blank=True)
+    tagger = models.CharField(max_length=255, blank=True)
+    # Conversation activity covered by this tagging; newer activity means re-tag.
+    tagged_activity_at = models.DateTimeField()
+    tagged_at = models.DateTimeField(auto_now=True)
+    error = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        verbose_name = _("Conversation tag")
+        verbose_name_plural = _("Conversation tags")
+
+    def __str__(self) -> str:
+        return f"Tags for {self.conversation_id}"
+
+
 class ConversationEvent(models.Model):
     """Audit trail: what happened in a conversation and when. Append-only."""
 

@@ -24,8 +24,8 @@ Planned features are delivered in stages. Each stage is tracked in
 | --- | --- | --- |
 | 0. Skeleton | Docker Compose stack, email sign-in, profile, append-only consent history, account deletion requests, white-label settings | Done |
 | 1. Submissions | Text submissions, cleaning pipeline, storage adapters (local filesystem, S3-compatible) | Done |
-| 2. Chat and review | Assistant chat, staff review queue, notifications, translation workflow | Planned |
-| 3. Extensions | Voice input, usage metrics, conversation topic tagging, phone sign-in via a messaging adapter | Planned |
+| 2. Chat and review | Assistant chat, staff review queue, notifications, translation workflow | Done |
+| 3. Extensions | Voice input, usage metrics, conversation topic tagging, phone sign-in via a messaging adapter | Done |
 
 What exists today: stage 0, the project documents, the documentation site
 and the contribution process.

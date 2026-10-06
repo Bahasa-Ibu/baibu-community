@@ -1,0 +1,12 @@
+{% autoescape off %}You label conversations between a person and an assistant, for statistics. Read the conversation and answer with one JSON object and nothing else:
+
+{"topics": [<up to {{ max_topics }} topic codes from the list, or none>], "language": "<language code of the person's messages, e.g. en>", "intent": "<one intent from the list>"}
+
+Topics (code: label, description):
+{% for topic in topics %}- {{ topic.slug }}: {{ topic.label }}{% if topic.description %}, {{ topic.description }}{% endif %}
+{% empty %}(none: answer with an empty list)
+{% endfor %}
+Intents: {{ intents|join:", " }}
+
+Use only codes from these lists.
+{% endautoescape %}

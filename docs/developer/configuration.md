@@ -117,6 +117,15 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_SEARCH_PROVIDER` | empty (no search) | Dotted path of a `SearchProvider` subclass for the `internet_search` tool, e.g. `baibu.chat.search.MockSearchProvider`. |
 | `CHAT_SEARCH_MAX_RESULTS` | `5` | Results per search. |
 | `CHAT_MAX_TOOL_ROUNDS` | `2` | Rounds of tool calls before the model must answer. |
+| `CHAT_TAGGING_ENABLED` | `False` | Tag idle conversations by topic, language and intent. |
+| `CHAT_TAGGING_MIN_TIER` | `eval_only` | Lowest chat consent tier whose conversations are tagged. |
+| `CHAT_TAGGING_MODEL` | empty (the chat's default model) | LiteLLM model for tagging. `mock` matches topic names as keywords. |
+| `CHAT_TAGGING_INTENTS` | `question,advice,information,conversation,other` | Intents the tagger chooses from. |
+| `CHAT_TAGGING_IDLE_MINUTES` | `30` | A conversation is tagged after this long without activity. |
+| `CHAT_TAGGING_INTERVAL_SECONDS` | `600` | How often beat looks for conversations to tag. |
+| `CHAT_TAGGING_BATCH_SIZE` | `100` | Conversations tagged per run. |
+| `CHAT_TAGGING_MAX_TOPICS` | `3` | Topics per conversation. |
+| `CHAT_TAGGING_MAX_MESSAGES`, `CHAT_TAGGING_MAX_CHARACTERS` | `40`, `12000` | How much of a conversation the tagger sees. |
 | `CHAT_STT_PROVIDER` | empty (no voice input) | Dotted path of a `SpeechToText` subclass for voice messages: `baibu.chat.speech.LiteLLMSpeechToText`, `baibu.chat.speech.MockSpeechToText` (made-up transcripts) or your own. Empty turns voice input off. |
 | `CHAT_STT_MODEL` | empty | `LiteLLMSpeechToText`: a transcription model name LiteLLM accepts, e.g. `openai/<model>` for an OpenAI-compatible server. |
 | `CHAT_STT_API_BASE` | empty | `LiteLLMSpeechToText`: endpoint URL, if the model needs one. |

@@ -298,6 +298,10 @@ CELERY_BEAT_SCHEDULE["chat-sweep-transcriptions"] = {
     "task": "baibu.chat.tasks.sweep_transcriptions",
     "schedule": env.int("CHAT_SWEEP_SECONDS", default=60),
 }
+CELERY_BEAT_SCHEDULE["chat-tag-conversations"] = {
+    "task": "baibu.chat.tasks.tag_conversations",
+    "schedule": env.int("CHAT_TAGGING_INTERVAL_SECONDS", default=600),
+}
 # The health endpoint reports the worker as stale after this many seconds
 # without a heartbeat.
 WORKER_HEARTBEAT_STALE_SECONDS = env.int("WORKER_HEARTBEAT_STALE_SECONDS", default=300)
@@ -422,6 +426,21 @@ CHAT_VOICE_CONTENT_TYPES = env.list(
         "audio/x-wav",
     ],
 )
+# Topic tagging of conversations (off by default). Topics are defined in the
+# admin. Only conversations whose chat consent is at least
+# CHAT_TAGGING_MIN_TIER are tagged.
+CHAT_TAGGING_ENABLED = env.bool("CHAT_TAGGING_ENABLED", default=False)
+CHAT_TAGGING_MIN_TIER = env("CHAT_TAGGING_MIN_TIER", default="eval_only")
+# Empty: the chat's default model. "mock" matches topic names as keywords.
+CHAT_TAGGING_MODEL = env("CHAT_TAGGING_MODEL", default="")
+CHAT_TAGGING_INTENTS = env.list(
+    "CHAT_TAGGING_INTENTS", default=["question", "advice", "information", "conversation", "other"]
+)
+CHAT_TAGGING_IDLE_MINUTES = env.int("CHAT_TAGGING_IDLE_MINUTES", default=30)
+CHAT_TAGGING_MAX_TOPICS = env.int("CHAT_TAGGING_MAX_TOPICS", default=3)
+CHAT_TAGGING_MAX_MESSAGES = env.int("CHAT_TAGGING_MAX_MESSAGES", default=40)
+CHAT_TAGGING_MAX_CHARACTERS = env.int("CHAT_TAGGING_MAX_CHARACTERS", default=12000)
+CHAT_TAGGING_BATCH_SIZE = env.int("CHAT_TAGGING_BATCH_SIZE", default=100)
 
 # NOTIFICATIONS
 # ------------------------------------------------------------------------------

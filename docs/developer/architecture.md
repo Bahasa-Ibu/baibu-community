@@ -98,6 +98,8 @@ erDiagram
     Message ||--o{ Run : triggers
     Conversation ||--o{ ConversationEvent : "audit trail"
     Run ||--o{ ToolInvocation : calls
+    Conversation ||--o| ConversationTag : "tagged as"
+    ConversationTag }o--o{ Topic : "about"
     Message ||--o{ ChatFlag : "reported in"
     Message ||--o| AudioClip : "voice recording"
     Conversation {
@@ -136,6 +138,17 @@ erDiagram
         int attempt
         string provider
         json error
+    }
+    ConversationTag {
+        string language
+        string intent
+        string tagger
+        datetime tagged_activity_at
+    }
+    Topic {
+        string slug
+        string label
+        bool active
     }
     ToolInvocation {
         uuid id
@@ -266,6 +279,8 @@ the receipt number, source and time, never personal details.
   time), beat runs `baibu.metrics.tasks.compute_daily_metrics`, which stores
   the previous day's usage counts (and any days missed while the worker was
   down). `manage.py compute_metrics` recomputes a range of days.
+- When `CHAT_TAGGING_ENABLED` is on, beat runs
+  `baibu.chat.tasks.tag_conversations` every 10 minutes.
 - Celery beat sends `baibu.core.tasks.heartbeat` every minute. The worker
   stores the time in the cache, and `/health/` reports the worker as `ok`,
   `stale` or `unknown`. `/health/` returns HTTP 503 only if the database or
