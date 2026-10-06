@@ -35,7 +35,7 @@ reached through LiteLLM, which the deployment chooses.
 | App | Responsibility |
 | --- | --- |
 | `baibu.core` | Platform settings exposed to templates (`platform` context), language configuration, the file storage interface, the `/health/` endpoint, the worker heartbeat task, and keeping the Site record in line with the platform name and domain. |
-| `baibu.users` | The user model (email sign-in, one `name` field), profile completion, consent history, account deletion requests, and the admin for all three. |
+| `baibu.users` | The user model (email sign-in, optional phone sign-in, one `name` field), profile completion, consent history, account deletion requests, the messaging provider interface for text messages, and the admin. |
 | `baibu.submissions` | Text contributions: the submission form and list, the cleaning task and pluggable cleaners, and the admin used for review. See [Submissions and cleaning](submissions.md). |
 | `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants and the audit trail; the Celery tasks that produce replies. See [Assistant chat](chat.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
@@ -43,7 +43,9 @@ reached through LiteLLM, which the deployment chooses.
 Sign-in, sign-up, email confirmation, password reset and two-factor
 authentication come from [django-allauth](https://docs.allauth.org/). The
 templates in `baibu/templates/allauth/` restyle its pages; they do not change
-its behaviour.
+its behaviour. With `PHONE_SIGN_IN_ENABLED`, allauth also signs people in
+with one-time codes sent to a verified phone number through the messaging
+provider (`MESSAGING_PROVIDER`); see [Phone sign-in](phone-sign-in.md).
 
 ## Data model
 
@@ -56,6 +58,8 @@ erDiagram
     User {
         uuid id
         string email "unique, sign-in"
+        string phone "E.164, optional"
+        bool phone_verified "unique number when true"
         string name
         string city
         string country
@@ -128,6 +132,14 @@ erDiagram
 Primary keys are UUIDv7, so they sort by creation time and do not reveal
 counts.
 
+### Phone numbers
+
+`User.phone` holds a number in E.164 format (`+12015550123`), or null.
+Only a verified number signs anyone in, and a verified number belongs to
+one user (a conditional unique constraint). Unverified numbers may repeat,
+so typing someone else's number blocks nothing; verifying a number clears
+it from accounts where it is still unverified.
+
 ### Consent
 
 A consent decision is one `ConsentRecord`. Records are append-only: a new
@@ -184,6 +196,7 @@ never prefixed.
 | `/` | Home |
 | `/privacy/`, `/terms/` | Placeholders; every deployment replaces them |
 | `/accounts/...` | Sign-in, sign-up, email, password, two-factor (allauth) |
+| `/accounts/phone/change/`, `/accounts/phone/verify/` | Add, change and verify a phone number (only with `PHONE_SIGN_IN_ENABLED`) |
 | `/users/account/` | Profile |
 | `/users/account/consent/` | Consent choice and history |
 | `/users/account/delete/` | Account deletion request |

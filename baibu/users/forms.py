@@ -1,5 +1,6 @@
 import logging
 
+from allauth.account.fields import PhoneField
 from allauth.account.forms import SignupForm
 from django import forms
 from django.contrib.auth import forms as admin_forms
@@ -9,6 +10,8 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import ConsentRecord
 from .models import User
+from .phone import normalize_phone
+from .phone import validate_e164
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +42,25 @@ class HoneypotMixin:
         return cleaned_data
 
 
+class PhoneNumberField(PhoneField):
+    """allauth's phone field, normalising the number before validating it."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        kwargs.setdefault("validators", [validate_e164])
+        kwargs.setdefault("help_text", _("Include the country code, starting with +."))
+        super().__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        return normalize_phone(super().to_python(value))
+
+
 class UserSignupForm(HoneypotMixin, SignupForm):
     name = forms.CharField(label=_("Name"), max_length=255)
     accept_terms = forms.BooleanField(
         error_messages={"required": _("You must agree to the terms to create an account.")},
     )
 
-    field_order = ["name", "email", "password1", "password2", "accept_terms"]
+    field_order = ["name", "email", "phone", "password1", "password2", "accept_terms"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -102,6 +117,9 @@ class AccountDeletionRequestForm(HoneypotMixin, forms.Form):
 class UserAdminChangeForm(admin_forms.UserChangeForm):
     class Meta(admin_forms.UserChangeForm.Meta):  # type: ignore[name-defined]
         model = User
+
+    def clean_phone(self):
+        return normalize_phone(self.cleaned_data.get("phone")) or None
 
 
 class UserAdminCreationForm(forms.ModelForm):

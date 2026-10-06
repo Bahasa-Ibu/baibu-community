@@ -12,6 +12,8 @@ from baibu.core.branding import build_languages
 from baibu.core.branding import register_extra_languages
 from baibu.core.storage_config import S3Options
 from baibu.core.storage_config import build_storages
+from baibu.users.sign_in_config import login_methods
+from baibu.users.sign_in_config import signup_fields
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 APPS_DIR = BASE_DIR / "baibu"
@@ -285,15 +287,28 @@ WORKER_HEARTBEAT_STALE_SECONDS = env.int("WORKER_HEARTBEAT_STALE_SECONDS", defau
 # Additional sign-in providers (any provider allauth supports) can be enabled
 # by a deployment; none is enabled here.
 ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", default=True)
-ACCOUNT_LOGIN_METHODS = {"email"}
+# Phone sign-in is off by default. When on, people can add a phone number
+# (verified by a code sent to it) and sign in with a one-time code sent to
+# that number, alongside email. Codes go out through MESSAGING_PROVIDER.
+PHONE_SIGN_IN_ENABLED = env.bool("PHONE_SIGN_IN_ENABLED", default=False)
+# Ask for a phone number at sign-up (verified before the first sign-in).
+PHONE_SIGN_UP_REQUIRED = env.bool("PHONE_SIGN_UP_REQUIRED", default=False)
+ACCOUNT_LOGIN_METHODS = login_methods(phone=PHONE_SIGN_IN_ENABLED)
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_SIGNUP_FIELDS = signup_fields(phone=PHONE_SIGN_IN_ENABLED, phone_required=PHONE_SIGN_UP_REQUIRED)
 ACCOUNT_EMAIL_VERIFICATION = env("DJANGO_ACCOUNT_EMAIL_VERIFICATION", default="mandatory")
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True
 ACCOUNT_ADAPTER = "baibu.users.adapters.AccountAdapter"
 ACCOUNT_FORMS = {"signup": "baibu.users.forms.UserSignupForm"}
+# Phone sign-in: dotted path to a baibu.users.messaging.MessagingProvider.
+# The console provider only writes messages to the log.
+MESSAGING_PROVIDER = env("MESSAGING_PROVIDER", default="baibu.users.messaging.ConsoleMessagingProvider")
+# Six digits: easy to type on any phone and picked up by SMS autofill.
+ACCOUNT_PHONE_VERIFICATION_CODE_FORMAT = {"numeric": True, "dashed": False, "length": 6}
+# Text messages get lost; allow two more codes per phone verification.
+ACCOUNT_PHONE_VERIFICATION_SUPPORTS_RESEND = True
 
 # PROFILE AND CONSENT
 # ------------------------------------------------------------------------------

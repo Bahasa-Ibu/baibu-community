@@ -61,6 +61,7 @@ nav:
       - File storage: developer/storage.md
       - Submissions and cleaning: developer/submissions.md
       - Assistant chat: developer/chat.md
+      - Phone sign-in: developer/phone-sign-in.md
       - White-label deployments: developer/white-label.md
   - Quality assurance:
       - Test plan: qa/test-plan.md

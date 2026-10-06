@@ -18,5 +18,6 @@ def platform(request):
             "languages": settings.LANGUAGES,
             "allow_registration": settings.ACCOUNT_ALLOW_REGISTRATION,
             "chat_enabled": settings.CHAT_ENABLED,
+            "phone_sign_in": settings.PHONE_SIGN_IN_ENABLED,
         },
     }

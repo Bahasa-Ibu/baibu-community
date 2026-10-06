@@ -1,0 +1,1 @@
+{% load i18n %}{% blocktranslate with name=platform_name %}Your {{ name }} code is {{ code }}. Do not share it with anyone.{% endblocktranslate %}

@@ -55,6 +55,16 @@ See [White-label deployments](white-label.md) for how these fit together.
 | `ACCOUNT_DELETION_REQUEST_RATE_LIMIT` | `3` | Deletion requests allowed per user per window. |
 | `ACCOUNT_DELETION_REQUEST_RATE_WINDOW_SECONDS` | `3600` | Length of that window. |
 
+## Phone sign-in
+
+See [Phone sign-in](phone-sign-in.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `PHONE_SIGN_IN_ENABLED` | `False` | Let people add a verified phone number and sign in with a one-time code sent to it, alongside email. |
+| `PHONE_SIGN_UP_REQUIRED` | `False` | With phone sign-in on: require a phone number at sign-up (verified before the first sign-in). Otherwise the field is optional. |
+| `MESSAGING_PROVIDER` | `baibu.users.messaging.ConsoleMessagingProvider` | Class that sends text messages: `ConsoleMessagingProvider` (writes them to the log), `MemoryMessagingProvider` (tests) or your own. |
+
 ## File storage
 
 See [File storage](storage.md).
