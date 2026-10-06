@@ -65,6 +65,7 @@ nav:
       - Staff review: developer/staff.md
       - Phone sign-in: developer/phone-sign-in.md
       - Translations: developer/translations.md
+      - Usage metrics: developer/metrics.md
       - White-label deployments: developer/white-label.md
   - Quality assurance:
       - Test plan: qa/test-plan.md

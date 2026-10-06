@@ -24,6 +24,7 @@ urlpatterns += i18n_patterns(
     path("contribute/", include("baibu.submissions.urls", namespace="submissions")),
     path("chat/", include("baibu.chat.urls", namespace="chat")),
     path("notifications/", include("baibu.notifications.urls", namespace="notifications")),
+    path("staff/usage/", include("baibu.metrics.urls", namespace="metrics")),
     path("staff/", include("baibu.staff.urls", namespace="staff")),
     path("translations/", include("baibu.localization.urls", namespace="localization")),
     path(settings.ADMIN_URL, admin.site.urls),

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Usage" %}{% endblock title %}
+{% block main %}
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
+    <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
+      <h1>{% translate "Usage" %}</h1>
+      <a class="btn-secondary" href="{% url 'metrics:export' %}?start={{ start|date:'Y-m-d' }}&amp;end={{ end|date:'Y-m-d' }}">{% translate "Download CSV" %}</a>
+    </div>
+    <p class="mb-6 text-sm text-stone-600">
+      {% translate "Counts only: no messages, names or individual people. Days are in the platform time zone." %}
+      {% if anchor %}
+        {% blocktranslate with day=anchor|date:"DATE_FORMAT" %}Figures up to {{ day }}.{% endblocktranslate %}
+      {% endif %}
+    </p>
+
+    {% if not anchor %}
+      <div class="card mb-6 text-stone-700" id="usage-empty">
+        <p class="mb-2">{% translate "No usage figures yet." %}</p>
+        <p class="text-sm">{% translate "They are computed every night for the day before. To fill in earlier days, run:" %}</p>
+        <pre class="mt-2 overflow-x-auto rounded-lg bg-stone-100 p-3 text-sm"><code>python manage.py compute_metrics --start YYYY-MM-DD --end YYYY-MM-DD</code></pre>
+      </div>
+    {% else %}
+      <section class="card mb-6" aria-labelledby="usage-headlines">
+        <h2 id="usage-headlines" class="mb-3">{% translate "At a glance" %}</h2>
+        {% if users_total is not None %}
+          <p class="mb-3 text-sm text-stone-700">{% blocktranslate count total=users_total %}{{ total }} user in total.{% plural %}{{ total }} users in total.{% endblocktranslate %}</p>
+        {% endif %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-stone-200 text-left text-stone-600">
+                <th scope="col" class="py-2 pr-4 font-medium"></th>
+                <th scope="col" class="py-2 pr-4 text-right font-medium">{% translate "Last day" %}</th>
+                <th scope="col" class="py-2 pr-4 text-right font-medium">{% translate "Last 7 days" %}</th>
+                <th scope="col" class="py-2 text-right font-medium">{% translate "Last 30 days" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for headline in headlines %}
+                <tr class="border-b border-stone-100">
+                  <th scope="row" class="py-2 pr-4 text-left font-normal">{{ headline.label }}</th>
+                  {% for value in headline.values %}
+                    <td class="py-2 pr-4 text-right tabular-nums">{{ value|default_if_none:"—" }}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+
+    <form method="get" class="card mb-6 flex flex-wrap items-end gap-4" novalidate>
+      {% if form.non_field_errors %}
+        <div class="w-full rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div class="m-0">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-primary">{% translate "Show" %}</button>
+    </form>
+
+    <section class="card mb-6" aria-labelledby="usage-chart">
+      <h2 id="usage-chart" class="mb-1">{{ chart.column.label }}</h2>
+      <p class="mb-3 text-sm text-stone-600">
+        {% blocktranslate with first=start|date:"DATE_FORMAT" last=end|date:"DATE_FORMAT" %}Per day, {{ first }} to {{ last }}.{% endblocktranslate %}
+        {% blocktranslate with top=chart.max %}Highest: {{ top }}.{% endblocktranslate %}
+      </p>
+      <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" class="h-40 w-full" preserveAspectRatio="none" role="img"
+           aria-label="{% blocktranslate with label=chart.column.label %}{{ label }} per day; the table below has the values.{% endblocktranslate %}">
+        <line x1="0" y1="{{ chart.height }}" x2="{{ chart.width }}" y2="{{ chart.height }}" stroke="#d6d3d1" stroke-width="1" />
+        {% for bar in chart.bars %}
+          <g>
+            <title>{{ bar.date|date:"DATE_FORMAT" }}: {{ bar.value|default_if_none:"—" }}</title>
+            <rect x="{{ bar.x|stringformat:'s' }}" y="0" width="{{ bar.width|stringformat:'s' }}" height="{{ chart.height }}" fill="transparent" />
+            <rect x="{{ bar.x|stringformat:'s' }}" y="{{ bar.y|stringformat:'s' }}" width="{{ bar.width|stringformat:'s' }}" height="{{ bar.height|stringformat:'s' }}" fill="var(--color-brand, #0f766e)" rx="1" />
+          </g>
+        {% endfor %}
+      </svg>
+      <div class="mt-1 flex justify-between text-xs text-stone-500">
+        <span>{{ start|date:"DATE_FORMAT" }}</span>
+        <span>{{ end|date:"DATE_FORMAT" }}</span>
+      </div>
+    </section>
+
+    <section class="card mb-6" aria-labelledby="usage-days">
+      <h2 id="usage-days" class="mb-3">{% translate "Per day" %}</h2>
+      {% if not has_data %}
+        <p class="text-sm text-stone-600">{% translate "No figures for these days." %}</p>
+      {% endif %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-stone-200 text-left align-bottom text-stone-600">
+              <th scope="col" class="py-2 pr-3 font-medium">{% translate "Day" %}</th>
+              {% for column in columns %}
+                <th scope="col" class="py-2 pr-3 text-right font-medium">{{ column.label }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr class="border-b border-stone-100">
+                <th scope="row" class="whitespace-nowrap py-1.5 pr-3 text-left font-normal">{{ row.date|date:"Y-m-d" }}</th>
+                {% if row.computed %}
+                  {% for value in row.cells %}
+                    <td class="py-1.5 pr-3 text-right tabular-nums">{{ value|default_if_none:"—" }}</td>
+                  {% endfor %}
+                {% else %}
+                  <td colspan="{{ columns|length }}" class="py-1.5 text-stone-500">{% translate "Not computed" %}</td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mb-6" aria-labelledby="usage-breakdowns">
+      <h2 id="usage-breakdowns" class="mb-1">{% translate "Breakdowns for these days" %}</h2>
+      {% if min_group_size > 1 %}
+        <p class="mb-3 text-sm text-stone-600">{% blocktranslate with size=min_group_size %}Counts by language or consent below {{ size }} are shown as &lt;{{ size }}.{% endblocktranslate %}</p>
+      {% endif %}
+      <div class="grid gap-4 md:grid-cols-2">
+        {% for breakdown in breakdowns %}
+          <div class="card">
+            <h3 class="mb-2 font-semibold">{{ breakdown.metric.label }}</h3>
+            {% if breakdown.rows %}
+              <table class="w-full text-sm">
+                <tbody>
+                  {% for dimension, value in breakdown.rows %}
+                    <tr class="border-b border-stone-100">
+                      <th scope="row" class="py-1 pr-3 text-left font-normal">{{ dimension }}</th>
+                      <td class="py-1 text-right tabular-nums">{{ value }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <p class="text-sm text-stone-500">{% translate "None." %}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="card">
+          <h3 class="mb-2 font-semibold">{% translate "Current consent" %}</h3>
+          {% if consent %}
+            <p class="mb-2 text-xs text-stone-500">{% blocktranslate with day=consent_day|date:"DATE_FORMAT" %}Users per scope and tier at the end of {{ day }}.{% endblocktranslate %}</p>
+            <table class="w-full text-sm">
+              <tbody>
+                {% for scope, tier, value in consent %}
+                  <tr class="border-b border-stone-100">
+                    <th scope="row" class="py-1 pr-3 text-left font-normal">{{ scope }}: {{ tier }}</th>
+                    <td class="py-1 text-right tabular-nums">{{ value }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="text-sm text-stone-500">{% translate "None." %}</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="usage-retention">
+      <h2 id="usage-retention" class="mb-1">{% translate "Weekly retention" %}</h2>
+      <p class="mb-3 text-sm text-stone-600">{% translate "Users who joined in a week (Monday to Sunday), and how many of them were active in each following week." %}</p>
+      {% if retention.cohorts %}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-stone-200 text-left text-stone-600">
+                <th scope="col" class="py-2 pr-3 font-medium">{% translate "Week joined" %}</th>
+                <th scope="col" class="py-2 pr-3 text-right font-medium">{% translate "Users" %}</th>
+                {% for week in retention.weeks %}
+                  <th scope="col" class="py-2 pr-3 text-right font-medium">{% blocktranslate %}Week {{ week }}{% endblocktranslate %}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for cohort in retention.cohorts %}
+                <tr class="border-b border-stone-100">
+                  <th scope="row" class="whitespace-nowrap py-1.5 pr-3 text-left font-normal">{{ cohort.week|date:"Y-m-d" }}</th>
+                  <td class="py-1.5 pr-3 text-right tabular-nums">{{ cohort.size }}</td>
+                  {% for cell in cohort.cells %}
+                    <td class="py-1.5 pr-3 text-right tabular-nums">{% if cell %}{{ cell.value }} <span class="text-stone-500">({{ cell.percent }}%)</span>{% endif %}</td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-stone-500">{% translate "No cohorts start in these days." %}</p>
+      {% endif %}
+    </section>
+  </main>
+{% endblock main %}

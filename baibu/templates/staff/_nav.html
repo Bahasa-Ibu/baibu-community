@@ -8,4 +8,5 @@
   <a href="{{ submissions_url }}" class="{% if submissions_url in request.path %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Submissions" %}</a>
   <a href="{{ flags_url }}" class="{% if flags_url in request.path %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Reported replies" %}</a>
   <a href="{{ errors_url }}" class="{% if request.path == errors_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Errors" %}</a>
+  {% if perms.metrics.view_dailymetric %}<a href="{% url 'metrics:usage' %}" class="btn-secondary">{% translate "Usage" %}</a>{% endif %}
 </nav>
