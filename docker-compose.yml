@@ -1,0 +1,74 @@
+# Local development stack. Copy .env.example to .env first.
+#   docker compose up --build        -> http://localhost:8000
+# Every service here is open source; nothing needs a paid account.
+
+x-django: &django
+  build:
+    context: .
+    dockerfile: compose/django/Dockerfile
+    target: development
+  image: baibu_community_django
+  env_file: .env
+  volumes:
+    - .:/app:z
+  depends_on:
+    postgres:
+      condition: service_healthy
+    valkey:
+      condition: service_healthy
+
+services:
+  django:
+    <<: *django
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: start-dev
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  celeryworker:
+    <<: *django
+    command: celery-worker
+    restart: unless-stopped
+
+  celerybeat:
+    <<: *django
+    command: celery-beat
+    restart: unless-stopped
+
+  # Rebuilds the stylesheet when templates change.
+  tailwind:
+    image: node:22-bookworm-slim
+    working_dir: /app/baibu/theme/static_src
+    volumes:
+      - .:/app:z
+      - tailwind_node_modules:/app/baibu/theme/static_src/node_modules
+    command: sh -c "npm ci && npm run dev"
+    profiles: ["css"]
+
+  postgres:
+    image: postgres:17
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:8
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data: {}
+  tailwind_node_modules: {}

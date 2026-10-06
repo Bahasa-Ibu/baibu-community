@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Your account" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Your account" %}</h1>
+  {% include "users/_account_nav.html" %}
+  <div class="card mb-6">
+    <h2 class="mb-1">{% translate "Data use" %}</h2>
+    <p class="text-sm text-stone-700">
+      {% if consent_state.latest_record %}
+        {% blocktranslate with choice=consent_state.latest_record.get_tier_display %}Your current choice: {{ choice }}.{% endblocktranslate %}
+      {% else %}
+        {% translate "You have not chosen how your contributions may be used yet." %}
+      {% endif %}
+      <a href="{% url 'users:consent' %}">{% translate "Review" %}</a>
+    </p>
+  </div>
+  <div class="card">
+    <h2 class="mb-4">{% translate "Profile" %}</h2>
+    <p class="mb-4 text-sm text-stone-600">{{ user.email }}</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" with form=form %}
+      <button type="submit" class="btn-primary">{% translate "Save" %}</button>
+    </form>
+  </div>
+{% endblock content %}

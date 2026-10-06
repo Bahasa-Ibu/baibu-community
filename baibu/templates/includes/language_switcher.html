@@ -1,0 +1,15 @@
+{% load i18n %}
+{% if platform.languages|length > 1 %}
+  {% get_current_language as LANGUAGE_CODE %}
+  <form action="{% url 'set_language' %}" method="post" class="m-0">
+    {% csrf_token %}
+    <input name="next" type="hidden" value="{{ request.get_full_path }}">
+    <label for="language-switcher" class="sr-only">{% translate "Language" %}</label>
+    <select id="language-switcher" name="language" onchange="this.form.submit()" class="py-1 text-sm">
+      {% for code, name in platform.languages %}
+        <option value="{{ code }}"{% if code == LANGUAGE_CODE %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit" class="btn-secondary">{% translate "Change" %}</button></noscript>
+  </form>
+{% endif %}

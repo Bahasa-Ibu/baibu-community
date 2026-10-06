@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Data use" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Your account" %}</h1>
+  {% include "users/_account_nav.html" %}
+  <div class="card mb-6">
+    <h2 class="mb-2">{% translate "How may your contributions be used?" %}</h2>
+    <p class="mb-4 text-sm text-stone-700">
+      {% translate "You can change this at any time. A change applies from now on; we keep a record of each choice and when you made it." %}
+      <a href="{% url 'privacy' %}">{% translate "Read the privacy notice" %}</a>
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.tier.errors %}<div class="errorlist">{{ form.tier.errors }}</div>{% endif %}
+      <fieldset class="space-y-3">
+        <legend class="sr-only">{{ form.tier.label }}</legend>
+        {% for radio in form.tier %}
+          <label class="flex items-start gap-3 rounded-lg border border-stone-200 p-3 font-normal">
+            {{ radio.tag }}
+            <span>{{ radio.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </fieldset>
+      <button type="submit" class="btn-primary mt-4">{% translate "Save my choice" %}</button>
+    </form>
+  </div>
+  {% if history %}
+    <div class="card">
+      <h2 class="mb-2">{% translate "Your history" %}</h2>
+      <ul class="divide-y divide-stone-100 text-sm">
+        {% for record in history %}
+          <li class="flex justify-between py-2">
+            <span>{{ record.get_tier_display }}</span>
+            <span class="text-stone-500">{{ record.granted_at|date:"DATETIME_FORMAT" }}{% if record.revoked_at %} – {{ record.revoked_at|date:"DATETIME_FORMAT" }}{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{% endblock content %}

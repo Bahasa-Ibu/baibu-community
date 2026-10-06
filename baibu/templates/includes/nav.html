@@ -1,0 +1,25 @@
+{% load static i18n %}
+<header class="border-b border-stone-200 bg-white">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3" aria-label="{% translate 'Main' %}">
+    <a href="{% url 'home' %}" class="flex items-center gap-2 font-semibold text-stone-900 no-underline hover:no-underline">
+      <img src="{% static platform.logo_path %}" alt="" class="h-8 w-8">
+      <span>{{ platform.name }}</span>
+    </a>
+    <div class="flex items-center gap-3 text-sm">
+      {% if user.is_authenticated %}
+        <a href="{% url 'users:account' %}">{% translate "Account" %}</a>
+        {% if user.is_staff %}<a href="{% url 'admin:index' %}">{% translate "Admin" %}</a>{% endif %}
+        <form method="post" action="{% url 'account_logout' %}" class="m-0">
+          {% csrf_token %}
+          <button type="submit" class="btn-secondary">{% translate "Sign out" %}</button>
+        </form>
+      {% else %}
+        <a href="{% url 'account_login' %}">{% translate "Sign in" %}</a>
+        {% if platform.allow_registration %}
+          <a href="{% url 'account_signup' %}" class="btn-primary">{% translate "Join" %}</a>
+        {% endif %}
+      {% endif %}
+      {% include "includes/language_switcher.html" %}
+    </div>
+  </nav>
+</header>

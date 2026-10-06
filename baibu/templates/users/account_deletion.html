@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Delete your account" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Your account" %}</h1>
+  {% include "users/_account_nav.html" %}
+  <div class="card">
+    <h2 class="mb-2">{% translate "Delete your account" %}</h2>
+    <p class="mb-4 text-sm text-stone-700">
+      {% blocktranslate with name=platform.name %}When you send this request your account is deactivated straight away and you are signed out. The {{ name }} team then deletes your account and data, and keeps only what the law requires.{% endblocktranslate %}
+    </p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" with form=form %}
+      <button type="submit" class="btn-danger">{% translate "Request deletion" %}</button>
+    </form>
+  </div>
+{% endblock content %}

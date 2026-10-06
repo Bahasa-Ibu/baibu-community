@@ -1,0 +1,27 @@
+{% load static i18n %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ platform.name }}{% endblock title %} · {{ platform.name }}</title>
+    <meta name="description" content="{{ platform.tagline }}">
+    <link rel="icon" href="{% static platform.logo_path %}">
+    <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
+    {% if platform.brand_color %}
+      <style>:root { --color-brand: {{ platform.brand_color }}; }</style>
+    {% endif %}
+    {% block extra_head %}{% endblock extra_head %}
+  </head>
+  <body class="flex min-h-screen flex-col">
+    {% include "includes/nav.html" %}
+    {% include "includes/messages.html" %}
+    {% block main %}
+      <main class="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+        {% block content %}{% endblock content %}
+      </main>
+    {% endblock main %}
+    {% include "includes/footer.html" %}
+    {% block extra_body %}{% endblock extra_body %}
+  </body>
+</html>

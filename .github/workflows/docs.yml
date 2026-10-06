@@ -1,0 +1,58 @@
+name: Documentation and coverage report
+
+# Builds the MkDocs site, runs the tests to produce the coverage report,
+# publishes both to GitHub Pages: the report is served under /coverage/.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: baibu
+          POSTGRES_PASSWORD: baibu
+          POSTGRES_DB: baibu
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U baibu"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://baibu:baibu@localhost:5432/baibu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Coverage report
+        run: |
+          uv run --frozen coverage run -m pytest -q
+          uv run --frozen coverage html -d htmlcov --title "Baibu Community Edition coverage"
+      - name: Build docs
+        run: uvx --with-requirements docs/requirements.txt mkdocs build --strict
+      - name: Add coverage report to the site
+        run: cp -r htmlcov site/coverage
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

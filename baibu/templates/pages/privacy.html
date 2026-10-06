@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Privacy notice" %}{% endblock title %}
+{% block content %}
+  {% comment %}
+    Placeholder. Every deployment must replace this page with its own privacy
+    notice by adding templates/pages/privacy.html under DEPLOYMENT_DIR.
+  {% endcomment %}
+  <article class="prose-page">
+    <h1>{% translate "Privacy notice" %}</h1>
+    <p class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+      {% blocktranslate with name=platform.name %}This is a placeholder. The organisation running {{ name }} must publish its own privacy notice here before inviting contributors.{% endblocktranslate %}
+    </p>
+    <h2>{% translate "What a privacy notice should cover" %}</h2>
+    <ul>
+      <li>{% translate "Who runs the platform and how to contact them." %}</li>
+      <li>{% translate "What personal data is collected, and why." %}</li>
+      <li>{% translate "How contributions are used at each consent choice, and how to change that choice." %}</li>
+      <li>{% translate "Where data is stored, who can access it, and how long it is kept." %}</li>
+      <li>{% translate "Which outside services process data, if any (for example a language model provider)." %}</li>
+      <li>{% translate "How to request deletion of an account and its data." %}</li>
+    </ul>
+  </article>
+{% endblock content %}

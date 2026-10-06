@@ -7,9 +7,8 @@ request.
 By taking part you agree to follow the
 [code of conduct](https://github.com/Bahasa-Ibu/baibu-community/blob/main/CODE_OF_CONDUCT.md).
 
-The project is at an early stage. The application skeleton is still being
-built, so some commands below describe the intended workflow and will work
-once it lands.
+The project is at an early stage: the application skeleton runs and feature
+stages follow, so expect larger changes until a 1.0 release.
 
 ## Ways to contribute
 

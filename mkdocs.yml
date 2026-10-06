@@ -36,7 +36,11 @@ markdown_extensions:
   - toc:
       permalink: true
   - pymdownx.highlight
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.snippets:
       base_path: ["."]
       check_paths: true
@@ -52,6 +56,9 @@ nav:
   - Getting started: getting-started.md
   - Developer:
       - developer/index.md
+      - Architecture: developer/architecture.md
+      - Configuration: developer/configuration.md
+      - White-label deployments: developer/white-label.md
   - Quality assurance:
       - Test plan: qa/test-plan.md
       - Coverage report: https://bahasa-ibu.github.io/baibu-community/coverage/
