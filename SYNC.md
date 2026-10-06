@@ -36,5 +36,6 @@ production content, prompts and vendor integrations never come across.
 | Submission review | Django admin actions with enforced status transitions until the review queue (#17) | Smallest useful review tool. |
 | Chat | Web chat only; replies through LiteLLM with a local `mock` model by default; API keys referenced by environment variable name; versioned prompts edited in the admin; one active reply per conversation; a sweeper instead of execution leases | Vendor-neutral and simpler to operate. |
 | Web search | A `SearchProvider` interface with a mock; no provider bundled | No commercial search service in the code. |
+| Interface translations | Edited and published on the site by translators holding a permission; drafts and published catalogues kept through the storage interface; source strings extracted with gettext into a temporary directory; each web and worker process loads new publications from storage when the cache signals one, with no third-party translation tool | Works on any storage backend and with several processes or containers, needs no writable code directory and no redeploy |
 | Migrations | Fresh history starting at `0001` | Upstream migrations are regenerated, not copied. |
 | Layout | Django project at the repository root (upstream: `web-app/`) | Map `web-app/<path>` to `<path>`. |

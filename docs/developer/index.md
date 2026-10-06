@@ -9,6 +9,8 @@ This section is for people who change the code or run a deployment.
   name, look, languages and pages without changing the code.
 - [Phone sign-in](phone-sign-in.md): one-time codes by text message, and how
   to write a messaging provider.
+- [Translations](translations.md): how translators edit and publish the
+  interface in a deployment's languages.
 
 To run the platform locally, start with [Getting started](../getting-started.md).
 To send a change, read the [contributing guide](../community/contributing.md).
@@ -40,6 +42,8 @@ config/              Django settings, URLs, Celery app, WSGI entry point
 baibu/
   core/              platform settings in templates, health check, worker heartbeat
   users/             accounts, profile, consent history, account deletion requests
+  submissions/       text contributions and cleaning
+  localization/      interface translations: drafts, publishing, loading
   theme/             Tailwind source (static_src/); builds static/css/dist/styles.css
   templates/         Django templates; allauth/ restyles the sign-in pages
   static/            images, built CSS
@@ -48,6 +52,5 @@ deployment/          a deployment's own templates, translations and static files
 docs/                this documentation site (MkDocs)
 ```
 
-Feature apps (submissions, chat, staff, notifications, localization,
-analytics) are added as later stages land; see the
+Further feature apps (chat, staff, notifications, analytics) are added as later stages land; see the
 [roadmap](../project/roadmap.md).

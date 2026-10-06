@@ -5,7 +5,9 @@ Files here override the platform defaults without changing the code:
 - `templates/`: any template with the same path as one in `baibu/templates/`
   replaces it. Replace `pages/privacy.html` and `pages/terms.html` before
   inviting anyone.
-- `locale/`: your translations (`<code>/LC_MESSAGES/django.po`).
+- `locale/`: your translations as files (`<code>/LC_MESSAGES/django.po`).
+  Translators can also translate and publish on the site, at
+  `/translations/`; those translations win where both exist.
 - `static/`: your logo and other files.
 
 This directory is empty in the repository. Keep your own deployment directory

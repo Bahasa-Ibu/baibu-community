@@ -41,7 +41,7 @@ See [White-label deployments](white-label.md) for how these fit together.
 | `PLATFORM_LANGUAGES` | `en` | Comma-separated language codes offered to users. |
 | `PLATFORM_DEFAULT_LANGUAGE` | `en` | Language for URLs without a prefix. Must be in `PLATFORM_LANGUAGES`. |
 | `PLATFORM_EXTRA_LANGUAGES` | empty | Languages Django does not know: `code:English name:Local name;...`. |
-| `DEPLOYMENT_DIR` | `deployment/` | Directory with the deployment's `templates/`, `locale/` and `static/`. |
+| `DEPLOYMENT_DIR` | `deployment/` | Directory with the deployment's `templates/`, `locale/` and `static/`. Translations published from the site take precedence over `locale/` ([Translations](translations.md)). |
 
 ## Accounts and consent
 
@@ -126,6 +126,16 @@ See [Notifications](notifications.md).
 | --- | --- | --- |
 | `NOTIFICATIONS_ENABLED` | `True` | Create in-app notifications. |
 | `NOTIFICATIONS_RETENTION_DAYS` | `180` | Read notifications older than this are deleted daily. |
+
+## Translations
+
+See [Translations](translations.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `LOCALIZATION_PUBLISHED_DIR` | `var/locale` | Where each process keeps its copy of the published catalogues. Listed first in `LOCALE_PATHS`, so published translations win over `DEPLOYMENT_DIR/locale`. Must be writable; it need not be shared or backed up. |
+| `LOCALIZATION_SYNC` | `True` | Load translations published from the `/translations/` pages into every web and worker process. Turn off only if you manage catalogues as files. |
+| `LOCALIZATION_SYNC_SECONDS` | `10` | How often each process checks the cache for a new publication. `0` checks before every request and task. |
 
 ## Email
 

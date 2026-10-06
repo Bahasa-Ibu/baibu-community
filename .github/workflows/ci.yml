@@ -37,6 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Install GNU gettext (translation source extraction)
+        run: command -v xgettext || (sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext)
       - name: Start an S3-compatible server (SeaweedFS)
         run: |
           docker run -d --name s3 -p 8333:8333 chrislusf/seaweedfs:3.97 server -s3 -dir=/data -ip.bind=0.0.0.0

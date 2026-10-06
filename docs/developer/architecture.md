@@ -40,6 +40,7 @@ reached through LiteLLM, which the deployment chooses.
 | `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants and the audit trail; the Celery tasks that produce replies. See [Assistant chat](chat.md). |
 | `baibu.notifications` | The in-app inbox, the unread count in the navigation and the `notify()` service other apps call. See [Notifications](notifications.md). |
 | `baibu.staff` | The staff area: review queues for submissions and reported chat replies, and processing errors. No models of its own. See [Staff review](staff.md). |
+| `baibu.localization` | Interface translations edited and published from the site: source string extraction, drafts, publishing with an audit trail, and loading published catalogues into running processes. See [Translations](translations.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 
 Sign-in, sign-up, email confirmation, password reset and two-factor
@@ -57,6 +58,8 @@ erDiagram
     User |o--o{ AccountDeletionRequest : "asks for"
     User ||--o{ Submission : contributes
     ConsentRecord |o--o{ Submission : "in force for"
+    TranslationSource |o--o{ TranslationCatalogue : "merged into"
+    TranslationPublication |o--o{ TranslationPublication : "restores"
     User {
         uuid id
         string email "unique, sign-in"
@@ -144,6 +147,29 @@ erDiagram
         datetime requested_at
         datetime completed_at
     }
+    TranslationSource {
+        uuid id
+        string pot_key "private storage"
+        string content_hash
+        int entry_count
+        datetime created_at
+    }
+    TranslationCatalogue {
+        int id
+        string language_code "unique"
+        string draft_key "private storage"
+        datetime updated_at
+    }
+    TranslationPublication {
+        uuid id
+        string language_code
+        int version "per language"
+        string po_key "private storage"
+        string mo_key "private storage"
+        int translated_count
+        int fuzzy_count
+        datetime published_at
+    }
 ```
 
 Primary keys are UUIDv7, so they sort by creation time and do not reveal
@@ -174,6 +200,15 @@ consent through `baibu.users.consent`:
 Tiers are ordered: `training_eligible` includes `eval_only`, which includes
 `none`. Each feature that uses contributions records under its own `scope`.
 
+### Translations
+
+`TranslationSource` rows are the extracted source strings (newest is
+current), `TranslationCatalogue` holds one draft per language, and
+`TranslationPublication` is the append-only audit trail: one row per publish
+or restore, with who, when and counts. The newest publication of a language
+is live. Each row's `published_by`, `created_by` or `updated_by` is cleared if
+that user is deleted. See [Translations](translations.md).
+
 ### Account deletion
 
 Sending a deletion request deactivates the account at once and signs the
@@ -189,14 +224,17 @@ the receipt number, source and time, never personal details.
 
 ## Requests and background work
 
-- Every page goes through `LocaleMiddleware` (language from the URL prefix or
-  the language switcher) and `ProfileCompletionMiddleware` (signed-in users
+- Every page goes through `TranslationSyncMiddleware` (loads newly published
+  translations; see [Translations](translations.md)), then `LocaleMiddleware`
+  (language from the URL prefix or the language switcher) and `ProfileCompletionMiddleware` (signed-in users
   missing a field in `PROFILE_REQUIRED_FIELDS` are sent to complete their
   profile; sign-in pages, terms, privacy and the admin for staff are exempt).
 - Creating a submission queues `baibu.submissions.tasks.clean_submission`
   once the database transaction commits.
 - Sending a chat message queues `baibu.chat.tasks.execute_run`; beat runs
   `baibu.chat.tasks.sweep_runs` every minute to recover stuck replies.
+- Before each Celery task, the worker loads newly published translations in
+  the same way, so emails sent from tasks use them.
 - Celery beat sends `baibu.core.tasks.heartbeat` every minute. The worker
   stores the time in the cache, and `/health/` reports the worker as `ok`,
   `stale` or `unknown`. `/health/` returns HTTP 503 only if the database or
@@ -225,5 +263,8 @@ never prefixed.
 | `/staff/` | Staff overview, review queues (`review/submissions/`, `review/chats/`) and `errors/` |
 | `/chat/consent/` | Chat consent choice |
 | `/chat/<id>/` | One conversation |
+| `/translations/` | Translations overview (translators only) |
+| `/translations/<code>/` | Translate one language: edit, upload, download, publish |
+| `/translations/<code>/history/` | Published versions and restore |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |
 | `/health/` | Health check (JSON) |
