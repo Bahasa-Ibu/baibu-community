@@ -31,7 +31,7 @@ remove it straight away, then follow this guide.
 
 ## Acknowledgement
 
-Acknowledge every report within **3 working days**. The acknowledgement:
+Acknowledge every report within **14 days**. The acknowledgement:
 
 - confirms that the report has been received;
 - names the responders handling it;
@@ -80,7 +80,7 @@ the reporter who that is.
    would put someone at risk.
 4. **Talk to witnesses** if needed, with the reporter's agreement.
 5. **Decide.** Responders decide together whether the code of conduct was
-   breached and what to do. Aim to decide within **14 days** of the report.
+   breached and what to do. Aim to decide within **60 days** of the report.
    If it will take longer, tell the reporter.
 
 ## Applying the enforcement ladder
@@ -132,13 +132,13 @@ the outcome.
   decision, where possible.
 - The appeal reviewers may confirm, change or reverse the decision.
 - Restrictions stay in place while the appeal is reviewed.
-- Aim to decide an appeal within 14 days. The appeal decision is final.
+- Aim to decide an appeal within 60 days. The appeal decision is final.
 
 ## What to tell the reporter
 
 Keep the reporter informed throughout. At a minimum, tell them:
 
-- that the report has been received (within 3 working days);
+- that the report has been received (within 14 days);
 - if the investigation will take longer than expected;
 - the outcome: whether the code of conduct was breached, and the action
   taken in general terms. Share as much as you can without disclosing
