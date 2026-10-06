@@ -35,6 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+      - name: Install GNU gettext (translation source extraction)
+        run: command -v xgettext || (sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext)
       - name: Coverage report
         run: |
           uv run --frozen coverage run -m pytest -q
