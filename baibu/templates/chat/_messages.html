@@ -4,7 +4,19 @@
   {% for item in items %}
     {% with message=item.message %}
       <div class="flex {% if message.role == 'user' %}justify-end{% endif %}">
-        <div class="max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-3 {% if message.role == 'user' %}bg-brand text-white{% else %}border border-stone-200 bg-white text-stone-900{% endif %}">{{ message.content }}</div>
+        <div class="max-w-[85%] rounded-2xl px-4 py-3 {% if message.role == 'user' %}bg-brand text-white{% else %}border border-stone-200 bg-white text-stone-900{% endif %}">
+          <div class="whitespace-pre-line">{{ message.content }}</div>
+          {% if message.sources %}
+            <div class="mt-3 border-t border-stone-100 pt-2 text-sm">
+              <p class="font-semibold text-stone-600">{% translate "Sources" %}</p>
+              <ol class="list-decimal pl-5">
+                {% for source in message.sources %}
+                  <li><a href="{{ source.url }}" rel="nofollow noopener noreferrer" target="_blank">{{ source.title|default:source.url }}</a></li>
+                {% endfor %}
+              </ol>
+            </div>
+          {% endif %}
+        </div>
       </div>
       {% if item.failed_run %}
         <div class="flex justify-end">

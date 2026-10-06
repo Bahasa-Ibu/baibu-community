@@ -95,6 +95,48 @@ in the admin (*Chat → Prompts*):
 - Templates can use `platform` (name, tagline and so on), `user_name`,
   `language_code` and `language_name`.
 
+## Tools: web search
+
+The assistant can call **tools** while it writes a reply. The project ships
+one, `internet_search`, offered to the model only when a search provider is
+configured:
+
+1. The model asks for `internet_search` with a query.
+2. The configured provider returns results (title, link, snippet).
+3. The model receives them as JSON and writes its answer; the links are
+   listed as **Sources** under the reply.
+
+The model may call tools for up to `CHAT_MAX_TOOL_ROUNDS` rounds; the last
+call offers no tools, so it has to answer. A failing search does not fail
+the reply: the model is told the search failed. Every call is recorded as a
+`ToolInvocation` (tool, provider, arguments, number of results, error,
+latency) and as a `tool_completed` or `tool_failed` event. Only `http` and
+`https` links are shown.
+
+**No search provider is bundled.** To use one, write a subclass of
+`baibu.chat.search.SearchProvider`:
+
+```python
+from baibu.chat.search import SearchError, SearchProvider, SearchResult
+
+
+class MySearchProvider(SearchProvider):
+    name = "my-search"
+
+    def search(self, query, *, max_results):
+        try:
+            hits = call_my_search_service(query, limit=max_results)
+        except MyServiceError as exc:
+            raise SearchError("Search is unavailable.") from exc
+        return [SearchResult(title=h["title"], url=h["url"], snippet=h["text"]) for h in hits]
+```
+
+and set `CHAT_SEARCH_PROVIDER=myproject.search.MySearchProvider`. Keep the
+service's credentials in environment variables. For development,
+`baibu.chat.search.MockSearchProvider` returns made-up `example.org`
+results (a query containing `[search-fail]` fails; `[search-empty]` finds
+nothing).
+
 ## The mock model
 
 `mock` is for development and tests:

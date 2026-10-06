@@ -104,6 +104,9 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_MAX_ATTEMPTS` | `3` | Attempts at one reply, including retries. |
 | `CHAT_RUN_TIMEOUT_SECONDS` | `180` | A reply still running after this long is failed so the user can retry. |
 | `CHAT_SWEEP_SECONDS` | `60` | How often beat checks for stuck replies. |
+| `CHAT_SEARCH_PROVIDER` | empty (no search) | Dotted path of a `SearchProvider` subclass for the `internet_search` tool, e.g. `baibu.chat.search.MockSearchProvider`. |
+| `CHAT_SEARCH_MAX_RESULTS` | `5` | Results per search. |
+| `CHAT_MAX_TOOL_ROUNDS` | `2` | Rounds of tool calls before the model must answer. |
 
 ## Email
 

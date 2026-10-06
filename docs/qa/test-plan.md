@@ -185,6 +185,9 @@ translations.
 - A conversation has at most one queued or running run.
 - Runs stuck beyond the timeout are failed; a reply arriving after that is
   discarded.
+- Tools are offered only when configured. A tool failure is recorded and
+  the reply still completes. Tool rounds are limited; only `http(s)` source
+  links are shown.
 - Prompt versions cannot be edited once saved; one version per name is
   active. Conversation events cannot be edited.
 

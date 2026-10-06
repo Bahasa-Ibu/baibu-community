@@ -7,7 +7,9 @@ active run at a time. A failed run can be retried, which creates a new run
 for the same message, up to ``CHAT_MAX_ATTEMPTS`` per message.
 """
 
+import json
 import logging
+import time
 import uuid
 from datetime import timedelta
 
@@ -22,12 +24,14 @@ from django.utils.translation import get_language_info
 from baibu.users.consent import consent_state
 
 from . import llm
+from . import tools
 from .models import Conversation
 from .models import ConversationEvent
 from .models import Message
 from .models import ModelVariant
 from .models import Prompt
 from .models import Run
+from .models import ToolInvocation
 
 logger = logging.getLogger(__name__)
 
@@ -200,9 +204,56 @@ def execute(run_id) -> Run | None:
 
 
 def generate(run: Run, config: llm.ModelConfig, messages: list[dict]) -> llm.Completion:
-    """Ask the model for the reply. Tools hook in here."""
+    """Ask the model for the reply, running any tools it calls.
+
+    The model may call tools for up to ``CHAT_MAX_TOOL_ROUNDS`` rounds; the
+    last call offers no tools, so it has to answer. Sources from tools are
+    collected on ``run.sources`` for the reply.
+    """
     run.model_name = config.model
-    return llm.complete(config, messages)
+    run.sources = []
+    available = {tool.name: tool for tool in tools.available_tools()}
+    messages = list(messages)
+    for round_number in range(settings.CHAT_MAX_TOOL_ROUNDS + 1):
+        offer = [tool.schema() for tool in available.values()] if round_number < settings.CHAT_MAX_TOOL_ROUNDS else []
+        completion = llm.complete(config, messages, tools=offer or None)
+        if not completion.tool_calls:
+            return completion
+        messages.append(completion.raw_message)
+        for call in completion.tool_calls:
+            messages.append({"role": "tool", "tool_call_id": call.id, "content": _run_tool(run, available, call)})
+    return completion  # pragma: no cover - the last round offers no tools
+
+
+def _run_tool(run: Run, available: dict, call: llm.ToolCall) -> str:
+    started = time.monotonic()
+    tool = available.get(call.name)
+    invocation = ToolInvocation(run=run, tool_name=call.name[:64], call_id=call.id[:255], arguments=call.arguments)
+    try:
+        if tool is None:
+            msg = f"Unknown tool {call.name!r}."
+            raise tools.ToolError(msg)
+        result = tool.run(call.arguments)
+    except tools.ToolError as exc:
+        invocation.status = ToolInvocation.Status.FAILED
+        invocation.error = str(exc)[:500]
+        content = json.dumps({"error": invocation.error})
+    else:
+        invocation.status = ToolInvocation.Status.COMPLETED
+        invocation.provider = result.provider
+        invocation.result_count = len(result.sources)
+        run.sources.extend(s for s in result.sources if s not in run.sources)
+        content = result.content
+    invocation.latency_ms = int((time.monotonic() - started) * 1000)
+    invocation.save()
+    record_event(
+        conversation=run.conversation,
+        type=f"tool_{invocation.status}",
+        run=run,
+        tool=invocation.tool_name,
+        invocation=str(invocation.pk),
+    )
+    return content
 
 
 def complete(run: Run, completion: llm.Completion) -> Run:
@@ -215,7 +266,11 @@ def complete(run: Run, completion: llm.Completion) -> Run:
             # Timed out and failed by the sweeper meanwhile; keep that outcome.
             return locked
         reply = Message.objects.create(
-            conversation=run.conversation, role=Message.Role.ASSISTANT, content=content, run=run
+            conversation=run.conversation,
+            role=Message.Role.ASSISTANT,
+            content=content,
+            run=run,
+            sources=getattr(run, "sources", [])[: settings.CHAT_SEARCH_MAX_RESULTS * settings.CHAT_MAX_TOOL_ROUNDS],
         )
         run.status = Run.Status.COMPLETED
         run.model_name = completion.model or run.model_name

@@ -351,3 +351,10 @@ CHAT_MAX_MESSAGE_CHARACTERS = env.int("CHAT_MAX_MESSAGE_CHARACTERS", default=400
 CHAT_MAX_ATTEMPTS = env.int("CHAT_MAX_ATTEMPTS", default=3)
 # A reply still running after this long is failed so the user can retry.
 CHAT_RUN_TIMEOUT_SECONDS = env.int("CHAT_RUN_TIMEOUT_SECONDS", default=180)
+# Web search for the assistant's internet_search tool: a SearchProvider
+# subclass (see baibu.chat.search). Empty disables the tool. No provider is
+# bundled; baibu.chat.search.MockSearchProvider returns made-up results.
+CHAT_SEARCH_PROVIDER = env("CHAT_SEARCH_PROVIDER", default="")
+CHAT_SEARCH_MAX_RESULTS = env.int("CHAT_SEARCH_MAX_RESULTS", default=5)
+# Rounds of tool calls the model may make before it must answer.
+CHAT_MAX_TOOL_ROUNDS = env.int("CHAT_MAX_TOOL_ROUNDS", default=2)
