@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Contribute" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-2">{% translate "Contribute your writing" %}</h1>
+  <p class="mb-6 text-stone-700">
+    {% translate "We check every contribution: personal details such as email addresses and phone numbers are removed automatically, and some texts are read by a person." %}
+    <a href="{% url 'submissions:list' %}">{% translate "See your contributions" %}</a>
+  </p>
+  <form method="post" class="card space-y-4">
+    {% csrf_token %}
+    {% include "includes/form_fields.html" with form=form %}
+    <button type="submit" class="btn-primary">{% translate "Submit" %}</button>
+  </form>
+{% endblock content %}

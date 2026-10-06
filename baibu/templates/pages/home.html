@@ -7,7 +7,8 @@
     <p class="mx-auto mt-4 max-w-xl text-lg text-stone-700">{{ platform.tagline }}</p>
     <div class="mt-8 flex justify-center gap-3">
       {% if user.is_authenticated %}
-        <a href="{% url 'users:account' %}" class="btn-primary">{% translate "Go to your account" %}</a>
+        <a href="{% url 'submissions:create' %}" class="btn-primary">{% translate "Contribute your writing" %}</a>
+        <a href="{% url 'users:account' %}" class="btn-secondary">{% translate "Your account" %}</a>
       {% else %}
         {% if platform.allow_registration %}<a href="{% url 'account_signup' %}" class="btn-primary">{% translate "Join" %}</a>{% endif %}
         <a href="{% url 'account_login' %}" class="btn-secondary">{% translate "Sign in" %}</a>

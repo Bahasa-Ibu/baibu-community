@@ -15,6 +15,7 @@ production content, prompts and vendor integrations never come across.
 | Date | Upstream reference | Pull request | What came across |
 | --- | --- | --- | --- |
 | 2026-10-06 | production `main` as of 2026-10-05 | #7 skeleton | Account model, append-only consent records, account deletion requests, profile completion. Rewritten for the Community Edition. |
+| 2026-10-06 | production `main` as of 2026-10-05 | storage (#14), submissions (#13) | Text submission intake, raw and cleaned copies in private storage, statuses, duplicate refusal, deletion of stored files. Redesigned rather than ported: see the differences below. |
 
 ## Deliberate differences
 
@@ -28,5 +29,9 @@ production content, prompts and vendor integrations never come across.
 | Consent | Generic scopes and a consent page in account settings; `CONSENT_TEXT_VERSION` stored | Each feature records under its own scope. |
 | Deletion requests | Strict status transitions; personal details cleared on completion; receipt kept after the user is deleted | Data minimisation. |
 | Theme | Neutral Tailwind theme, runtime brand colour, system fonts | White-label; no externally hosted fonts. |
+| File storage | One interface over the local filesystem or any S3-compatible store; records keep storage keys, not URIs | No cloud provider SDK in feature code. |
+| Submission cleaning | A Celery task: built-in rules, then a pluggable cleaner (rules only by default, any model through LiteLLM, or a mock) | Runs with the Compose stack alone; no cloud workflow service and no bundled model. |
+| Submission fields | Language as a code from settings; no tone or topic tags; the database keeps an excerpt of the cleaned text only | Simpler, and less personal data in the database. |
+| Submission review | Django admin actions with enforced status transitions until the review queue (#17) | Smallest useful review tool. |
 | Migrations | Fresh history starting at `0001` | Upstream migrations are regenerated, not copied. |
 | Layout | Django project at the repository root (upstream: `web-app/`) | Map `web-app/<path>` to `<path>`. |

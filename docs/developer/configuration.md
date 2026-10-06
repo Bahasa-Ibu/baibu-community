@@ -71,6 +71,24 @@ See [File storage](storage.md).
 | `S3_ADDRESSING_STYLE` | `path` | `path` or `virtual`. Most self-hosted servers need `path`. |
 | `S3_SIGNED_URL_SECONDS` | `3600` | Lifetime of signed URLs for stored files. |
 
+## Submissions
+
+See [Submissions and cleaning](submissions.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `SUBMISSION_LANGUAGES` | the `PLATFORM_LANGUAGES` codes | Languages people may contribute in. Any code Django knows or `PLATFORM_EXTRA_LANGUAGES` declares. With one language, the form does not ask. |
+| `SUBMISSION_CONSENT_SCOPE` | `CONSENT_DEFAULT_SCOPE` | Consent scope checked before contributing (at least `eval_only`). |
+| `SUBMISSION_MIN_WORDS` | `10` | Shortest text accepted. |
+| `SUBMISSION_MAX_CHARACTERS` | `20000` | Longest text accepted. |
+| `SUBMISSION_EXCERPT_LENGTH` | `280` | Characters of cleaned text kept in the database and shown to the contributor. |
+| `SUBMISSION_CLEANER` | `baibu.submissions.cleaners.RuleCleaner` | Cleaner run after the built-in rules: `RuleCleaner`, `LiteLLMCleaner`, `MockCleaner` or your own class. |
+| `SUBMISSION_CLEANER_MODEL` | empty | `LiteLLMCleaner`: a model name LiteLLM accepts, e.g. `openai/<model>` for an OpenAI-compatible server. |
+| `SUBMISSION_CLEANER_API_BASE` | empty | `LiteLLMCleaner`: endpoint URL, if the model needs one. |
+| `SUBMISSION_CLEANER_API_KEY` | empty | `LiteLLMCleaner`: API key, if the endpoint needs one. |
+| `SUBMISSION_CLEANER_TIMEOUT` | `60` | `LiteLLMCleaner`: seconds to wait for the model. |
+| `SUBMISSION_MIN_QUALITY` | `50` | Texts a cleaner scores below this (0 to 100) go to review. |
+
 ## Email
 
 Any SMTP server works. Local development prints emails to the `django`

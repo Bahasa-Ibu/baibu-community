@@ -89,6 +89,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "baibu.core",
     "baibu.users",
+    "baibu.submissions",
     "baibu.theme",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -305,3 +306,26 @@ CONSENT_TEXT_VERSION = env("CONSENT_TEXT_VERSION", default="1")
 # ------------------------------------------------------------------------------
 ACCOUNT_DELETION_REQUEST_RATE_LIMIT = env.int("ACCOUNT_DELETION_REQUEST_RATE_LIMIT", default=3)
 ACCOUNT_DELETION_REQUEST_RATE_WINDOW_SECONDS = env.int("ACCOUNT_DELETION_REQUEST_RATE_WINDOW_SECONDS", default=3600)
+
+# SUBMISSIONS
+# ------------------------------------------------------------------------------
+# Languages people may contribute in. Defaults to the interface languages; any
+# code Django knows or PLATFORM_EXTRA_LANGUAGES declares is allowed.
+SUBMISSION_LANGUAGES = env.list("SUBMISSION_LANGUAGES", default=[code for code, _name in LANGUAGES])
+# Contributors need at least eval_only consent under this scope.
+SUBMISSION_CONSENT_SCOPE = env("SUBMISSION_CONSENT_SCOPE", default=CONSENT_DEFAULT_SCOPE)
+SUBMISSION_MIN_WORDS = env.int("SUBMISSION_MIN_WORDS", default=10)
+SUBMISSION_MAX_CHARACTERS = env.int("SUBMISSION_MAX_CHARACTERS", default=20000)
+# Characters of cleaned text kept in the database and shown to the contributor.
+SUBMISSION_EXCERPT_LENGTH = env.int("SUBMISSION_EXCERPT_LENGTH", default=280)
+# The cleaning step after the built-in rules: RuleCleaner (rules only, the
+# default), LiteLLMCleaner (a model the deployment chooses) or MockCleaner.
+SUBMISSION_CLEANER = env("SUBMISSION_CLEANER", default="baibu.submissions.cleaners.RuleCleaner")
+# For LiteLLMCleaner: any model name LiteLLM accepts, and optionally the
+# endpoint and key (for example a self-hosted OpenAI-compatible server).
+SUBMISSION_CLEANER_MODEL = env("SUBMISSION_CLEANER_MODEL", default="")
+SUBMISSION_CLEANER_API_BASE = env("SUBMISSION_CLEANER_API_BASE", default="")
+SUBMISSION_CLEANER_API_KEY = env("SUBMISSION_CLEANER_API_KEY", default="")
+SUBMISSION_CLEANER_TIMEOUT = env.int("SUBMISSION_CLEANER_TIMEOUT", default=60)
+# Texts a cleaner scores below this (0-100) go to staff review.
+SUBMISSION_MIN_QUALITY = env.int("SUBMISSION_MIN_QUALITY", default=50)

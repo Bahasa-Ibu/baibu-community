@@ -21,6 +21,7 @@ urlpatterns += i18n_patterns(
     path("terms/", TemplateView.as_view(template_name="pages/terms.html"), name="terms"),
     path("accounts/", include("allauth.urls")),
     path("users/", include("baibu.users.urls", namespace="users")),
+    path("contribute/", include("baibu.submissions.urls", namespace="submissions")),
     path(settings.ADMIN_URL, admin.site.urls),
     prefix_default_language=False,
 )

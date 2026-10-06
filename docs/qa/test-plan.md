@@ -4,8 +4,9 @@ This document describes how Baibu Community Edition is tested: the testing
 strategy, tools, coverage targets, sample test cases, the core data
 structures under test and the pull request workflow.
 
-The project is at the skeleton stage. This plan covers the skeleton and sets
-out how later stages will be tested. It is updated as features land.
+The skeleton (stage 0) and text submissions (stage 1) are built. This plan
+covers them and sets out how later stages will be tested. It is updated as
+features land.
 
 ## Goals
 
@@ -104,7 +105,7 @@ The rules below are the intended behaviour. Where the code and this plan
 differ, the difference is treated as a bug in one or the other and fixed in
 the same pull request.
 
-### Implemented in the skeleton (stage 0)
+### Implemented
 
 **User.** A person with an account. Signs in by email. Has a profile.
 
@@ -150,17 +151,25 @@ data.
 languages, and a directory where a deployment can override templates and
 translations.
 
-### Planned
-
 **Submission** (stage 1). A text contribution from a user.
 
 - Statuses: `pending`, `verified`, `needs_review`, `rejected`, `issue`.
-- New submissions start as `pending`. The cleaning pipeline moves them to
-  `verified`, `needs_review` or `issue`. Staff review moves `needs_review`
-  to `verified` or `rejected`.
-- Raw and cleaned text are stored separately through the storage adapter.
-- The consent tier in force when the submission was made is recorded with
-  it.
+- New submissions start as `pending`. Cleaning moves them to `verified`,
+  `needs_review` or `issue`. Staff move `needs_review` to `verified` or
+  `rejected`, `issue` to `rejected`, `verified` to `rejected`, and any
+  cleaned submission back to `pending` to clean it again. Other changes are
+  refused.
+- Only users with at least `eval_only` consent can submit. The consent tier
+  and record in force are stored with the submission.
+- The same text (ignoring spacing) cannot be submitted twice.
+- Raw and cleaned text are stored separately through the storage interface.
+  The database holds only an excerpt of the cleaned text.
+- If storage fails while submitting, nothing is recorded. If cleaning fails
+  (cleaner error, missing raw text, storage error), the status is `issue`
+  with the reason, and no cleaned file is left behind.
+- Deleting a submission, or its user, deletes its stored files.
+
+### Planned
 
 **Conversation, Message and Run** (stage 2). The assistant chat.
 
@@ -189,8 +198,8 @@ feature lands.
 | TC-WL-01 | White-label settings | Settings set the platform name to "Example Platform" and the contact address to `help@example.org` | Load the home page and the sign-in email | The page title, header and email use "Example Platform" and `help@example.org`. The default platform name does not appear in the title, header or email. |
 | TC-WL-02 | White-label settings | A deployment override directory contains a replacement footer template | Load any page | The override footer is rendered instead of the default. |
 | TC-STO-01 | File storage | Each backend in turn: in-memory, a temporary directory, an S3-compatible server | Save a JSON payload with non-Latin text under a key, read it back, save again under the same key, delete it | The payload reads back unchanged. The second save returns a different key and the first file is untouched. After deletion the key reads as missing. Private files on the filesystem have no URL. |
-| TC-SUB-01 | Submission cleaning (planned) | User with `eval_only` consent | Submit text containing extra whitespace, control characters and a synthetic email address | Cleaned text has normalised whitespace, no control characters and the email address redacted. Raw text is stored separately. Status is `verified`, or `needs_review` if a rule flags it. The submission records consent tier `eval_only`. |
-| TC-SUB-02 | Submission cleaning (planned) | Storage adapter set to fail on write | Submit text | Status is `issue`. The error is logged. No partial cleaned file is left in storage. |
+| TC-SUB-01 | Submission cleaning | User with `eval_only` consent | Submit text containing extra whitespace, control characters and a synthetic email address | Cleaned text has normalised whitespace, no control characters and the email address redacted. Raw text is stored separately. Status is `verified`, or `needs_review` if the cleaner flags it. The submission records consent tier `eval_only`. |
+| TC-SUB-02 | Submission cleaning | Storage set to fail on write | Submit text | Status is `issue`. The error is logged. No partial cleaned file is left in storage. |
 | TC-CHT-01 | Chat run retry (planned) | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
 | TC-CHT-02 | Chat run retry (planned) | Mocked model always raises an error | Send a message and retry up to the configured limit | Each attempt creates a Run. After the limit, no further retries are allowed and the user sees an error message. No assistant message is created. |
 
