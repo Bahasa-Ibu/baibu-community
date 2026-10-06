@@ -3,9 +3,11 @@ from functools import wraps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.http import Http404
 from django.http import HttpRequest
 from django.http import HttpResponse
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -17,14 +19,18 @@ from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.http import require_POST
 
+from baibu.core import storage
 from baibu.users.consent import consent_state
 from baibu.users.consent import latest_consent
 from baibu.users.consent import record_consent
 from baibu.users.forms import ConsentForm
 
 from . import services
+from . import speech
 from .forms import MessageForm
 from .forms import ReportForm
+from .forms import VoiceForm
+from .models import AudioClip
 from .models import Conversation
 from .models import Message
 from .models import Run
@@ -38,6 +44,22 @@ def chat_enabled(view):
         return view(request, *args, **kwargs)
 
     return wrapper
+
+
+def voice_enabled(view):
+    @wraps(view)
+    def wrapper(request, *args, **kwargs):
+        if not speech.voice_enabled():
+            raise Http404
+        return view(request, *args, **kwargs)
+
+    return wrapper
+
+
+def _voice_context(action: str) -> dict:
+    if not speech.voice_enabled():
+        return {}
+    return {"voice": {"url": action, "max_seconds": settings.CHAT_VOICE_MAX_SECONDS}}
 
 
 def chat_consent_required(view):
@@ -63,6 +85,9 @@ def _own_conversation(request, pk) -> Conversation:
 def _messages_context(conversation: Conversation) -> dict:
     runs = list(conversation.runs.select_related("reply"))
     active = next((run for run in runs if run.status in Run.ACTIVE_STATUSES), None)
+    clips = {clip.message_id: clip for clip in conversation.audio_clips.all()}
+    transcribing = any(clip.status in AudioClip.ACTIVE_STATUSES for clip in clips.values())
+    busy = active is not None or transcribing
     latest_by_message = {}
     for run in runs:
         latest_by_message[run.triggering_message_id] = run
@@ -70,14 +95,20 @@ def _messages_context(conversation: Conversation) -> dict:
     items = []
     for message in conversation.messages.all():
         failed_run = failed.get(message.pk)
+        clip = clips.get(message.pk)
         items.append(
             {
                 "message": message,
+                "clip": clip,
+                "can_retry_voice": bool(clip)
+                and clip.status == AudioClip.Status.FAILED
+                and clip.attempt < settings.CHAT_MAX_ATTEMPTS
+                and not busy,
                 "failed_run": failed_run,
-                "can_retry": bool(failed_run) and failed_run.attempt < settings.CHAT_MAX_ATTEMPTS and not active,
+                "can_retry": bool(failed_run) and failed_run.attempt < settings.CHAT_MAX_ATTEMPTS and not busy,
             }
         )
-    return {"conversation": conversation, "items": items, "pending": active is not None}
+    return {"conversation": conversation, "items": items, "pending": busy, "replying": active is not None}
 
 
 @login_required
@@ -117,7 +148,11 @@ def consent_view(request: HttpRequest) -> HttpResponse:
 def home(request: HttpRequest) -> HttpResponse:
     conversations = Conversation.objects.filter(user=request.user)[:50]
     form = MessageForm(initial={"idempotency_key": services.new_idempotency_key()})
-    return render(request, "chat/home.html", {"conversations": conversations, "form": form})
+    return render(
+        request,
+        "chat/home.html",
+        {"conversations": conversations, "form": form, **_voice_context(reverse("chat:voice_new"))},
+    )
 
 
 @login_required
@@ -128,7 +163,12 @@ def new_conversation(request: HttpRequest) -> HttpResponse:
     form = MessageForm(request.POST)
     if not form.is_valid():
         conversations = Conversation.objects.filter(user=request.user)[:50]
-        return render(request, "chat/home.html", {"conversations": conversations, "form": form}, status=400)
+        return render(
+            request,
+            "chat/home.html",
+            {"conversations": conversations, "form": form, **_voice_context(reverse("chat:voice_new"))},
+            status=400,
+        )
     # A repeated first send must not start a second conversation.
     existing = Conversation.objects.filter(
         user=request.user, messages__idempotency_key=form.cleaned_data["idempotency_key"]
@@ -156,7 +196,12 @@ def conversation_view(request: HttpRequest, pk) -> HttpResponse:
     return render(
         request,
         "chat/conversation.html",
-        {**_messages_context(conversation), "form": form, "conversations": conversations},
+        {
+            **_messages_context(conversation),
+            "form": form,
+            "conversations": conversations,
+            **_voice_context(reverse("chat:voice", args=[conversation.pk])),
+        },
     )
 
 
@@ -242,3 +287,98 @@ def report_view(request: HttpRequest, message_id) -> HttpResponse:
         messages.success(request, _("Thank you. Someone on our team will look at this reply."))
         return redirect("chat:conversation", pk=message.conversation_id)
     return render(request, "chat/report.html", {"form": form, "message": message})
+
+
+def _form_error(form) -> str:
+    return " ".join(str(e) for errors in form.errors.values() for e in errors)
+
+
+@login_required
+@chat_enabled
+@voice_enabled
+@chat_consent_required
+@require_POST
+def new_voice_view(request: HttpRequest) -> HttpResponse:
+    """Start a conversation with a voice message."""
+    form = VoiceForm(request.POST, request.FILES)
+    if not form.is_valid():
+        error = _form_error(form)
+        if _wants_fragment(request):
+            return HttpResponseBadRequest(error, content_type="text/plain; charset=utf-8")
+        messages.error(request, error)
+        return redirect("chat:home")
+    key = form.cleaned_data["idempotency_key"]
+    existing = Conversation.objects.filter(user=request.user, messages__idempotency_key=key).first()
+    if existing:
+        return redirect("chat:conversation", pk=existing.pk)
+    audio = form.cleaned_data["audio"]
+    with transaction.atomic():
+        conversation = services.start_conversation(user=request.user, language_code=request.LANGUAGE_CODE)
+        services.send_voice(
+            conversation=conversation, audio=audio.read(), content_type=audio.clean_content_type, idempotency_key=key
+        )
+    return redirect("chat:conversation", pk=conversation.pk)
+
+
+@login_required
+@chat_enabled
+@voice_enabled
+@chat_consent_required
+@require_POST
+def voice_view(request: HttpRequest, pk) -> HttpResponse:
+    """Add a voice message to a conversation."""
+    conversation = _own_conversation(request, pk)
+    form = VoiceForm(request.POST, request.FILES)
+    error = ""
+    if form.is_valid():
+        audio = form.cleaned_data["audio"]
+        try:
+            services.send_voice(
+                conversation=conversation,
+                audio=audio.read(),
+                content_type=audio.clean_content_type,
+                idempotency_key=form.cleaned_data["idempotency_key"],
+            )
+        except services.ChatError as exc:
+            error = str(exc)
+    else:
+        error = _form_error(form)
+    if _wants_fragment(request):
+        return _fragment(request, conversation, status=400 if error else 200, error=error)
+    if error:
+        messages.error(request, error)
+    return redirect("chat:conversation", pk=conversation.pk)
+
+
+@login_required
+@chat_enabled
+@voice_enabled
+@require_POST
+def retry_voice_view(request: HttpRequest, clip_id) -> HttpResponse:
+    clip = get_object_or_404(AudioClip, pk=clip_id, conversation__user=request.user)
+    error = ""
+    try:
+        services.retry_transcription(clip)
+    except services.ChatError as exc:
+        error = str(exc)
+    if _wants_fragment(request):
+        return _fragment(request, clip.conversation, status=400 if error else 200, error=error)
+    if error:
+        messages.error(request, error)
+    return redirect("chat:conversation", pk=clip.conversation_id)
+
+
+@login_required
+@chat_enabled
+@cache_control(private=True, no_store=True)
+@require_GET
+def audio_view(request: HttpRequest, clip_id) -> HttpResponse:
+    """Play back the user's own recording from private storage."""
+    clip = get_object_or_404(AudioClip, pk=clip_id, conversation__user=request.user)
+    data = storage.read_bytes(clip.storage_key)
+    if data is None:
+        raise Http404
+    response = HttpResponse(data, content_type=clip.content_type)
+    response["Content-Disposition"] = "inline"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response

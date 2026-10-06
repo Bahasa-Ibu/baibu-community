@@ -13,3 +13,4 @@
     </section>
   </main>
 {% endblock main %}
+{% block extra_body %}{% if voice %}<script src="{% static 'js/chat.js' %}" defer></script>{% endif %}{% endblock extra_body %}

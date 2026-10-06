@@ -144,6 +144,94 @@ service's credentials in environment variables. For development,
 results (a query containing `[search-fail]` fails; `[search-empty]` finds
 nothing).
 
+## Voice messages
+
+Users can speak a message instead of typing it. Voice input is **off** until
+`CHAT_STT_PROVIDER` names a speech-to-text provider; while it is off there is
+no microphone button and the voice endpoints return 404.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Web as Django
+    participant Store as Private storage
+    participant Worker as Celery worker
+    participant STT as Speech to text
+    User->>Web: recording + idempotency key
+    Web->>Store: audio (chat/audio/yyyy/mm/dd/<id>.<ext>)
+    Web->>Web: Message (empty) + AudioClip (pending) + event
+    Web-->>Worker: transcribe_audio (after commit)
+    Worker->>STT: audio
+    STT-->>Worker: transcript
+    Worker->>Web: transcript becomes the message; Run queued
+    Worker-->>Worker: execute_run, as for a typed message
+```
+
+- **Recording.** `static/js/chat.js` records with the browser's
+  `MediaRecorder` and shows the *Record* button only where recording is
+  supported. A second click stops and sends; recording also stops after
+  `CHAT_VOICE_MAX_SECONDS`. On the start page a recording starts a new
+  conversation. Without JavaScript there is no voice input.
+- **Upload checks.** The server accepts recordings up to
+  `CHAT_VOICE_MAX_BYTES` in a format listed in `CHAT_VOICE_CONTENT_TYPES`.
+  Sends are idempotent like typed ones: the same key twice stores one
+  recording and creates one message.
+- **Storage.** The recording goes to private storage through
+  `baibu.core.storage`; an `AudioClip` keeps its key, format, size, status,
+  attempt number, provider, duration and any error. Deleting the message,
+  the conversation or the account deletes the recording once the deletion is
+  committed.
+- **Transcription.** A Celery task claims the clip (`pending` →
+  `transcribing`) and sends the audio to the provider. On success the
+  transcript (whitespace collapsed, cut to `CHAT_MAX_MESSAGE_CHARACTERS`)
+  becomes the user message and the reply is queued exactly as for a typed
+  message. The bubble shows the transcript with a *Voice message* label, and
+  the user can play back their own recording (served from private storage
+  after an ownership check, never cached).
+- **One thing at a time.** While a recording is being transcribed the
+  conversation is busy: typed and voice sends, and retries, are refused as
+  they are while a reply is written.
+- **Failures.** If transcription fails (provider error, no speech
+  recognised, recording missing) the message says so; the user can *Try
+  again* (up to `CHAT_MAX_ATTEMPTS` attempts) or type instead. Failed voice
+  messages are left out of the model's context. Beat runs
+  `sweep_transcriptions` every minute: transcriptions still running after
+  `CHAT_RUN_TIMEOUT_SECONDS` are failed, lost tasks are sent again, and
+  clips never started within three timeouts are failed.
+- **Audit trail.** `audio_received`, `transcription_completed`,
+  `transcription_failed` and `transcription_retried` events; the
+  `message_sent` event records `via: voice`. Recordings are covered by the
+  conversation's consent tier like the rest of the conversation.
+
+### Speech-to-text providers
+
+A provider is a subclass of `baibu.chat.speech.SpeechToText` with one
+method, `transcribe(audio, *, content_type, language_code)`, returning a
+`Transcript(text, language, duration, provider)` or raising
+`TranscriptionError`. `language_code` is the conversation's interface
+language, which may differ from the language spoken. Two are included:
+
+- **`LiteLLMSpeechToText`** calls `litellm.transcription`, so it works with
+  any transcription model LiteLLM supports, including a self-hosted server
+  that speaks the OpenAI-compatible transcription API. The project does not
+  recommend a model. For example:
+
+    | Setting | Value |
+    | --- | --- |
+    | `CHAT_STT_PROVIDER` | `baibu.chat.speech.LiteLLMSpeechToText` |
+    | `CHAT_STT_MODEL` | `openai/<model name on your server>` |
+    | `CHAT_STT_API_BASE` | `http://stt.internal:8000/v1` |
+    | `CHAT_STT_API_KEY_ENV` | `STT_API_KEY` (set in the worker's environment) |
+    | `CHAT_STT_PARAMETERS` | `{"language": "sw"}` to fix the spoken language, if the model accepts it |
+
+- **`MockSpeechToText`** needs no model. It transcribes every recording as
+  "This is a mock transcript.", except that audio containing
+  `[say:<text>]` is transcribed as `<text>`, `[stt-empty]` gives an empty
+  transcript and `[stt-fail]` fails. Use it for development and tests only.
+
+To use another service, subclass `SpeechToText` the same way as a search
+provider and name it in `CHAT_STT_PROVIDER`.
+
 ## The mock model
 
 `mock` is for development and tests:

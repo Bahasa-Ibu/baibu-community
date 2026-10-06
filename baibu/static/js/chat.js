@@ -83,6 +83,96 @@
     }
   });
 
+  // Voice messages: record with MediaRecorder and upload. The button stays
+  // hidden where the browser cannot record or voice input is off.
+  const TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
+  const recorder = { media: null, chunks: [], timer: null };
+
+  function voiceStatus(text) {
+    const status = document.querySelector("[data-voice-status]");
+    if (status) status.textContent = text || "";
+  }
+
+  function setRecording(button, on) {
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+    button.textContent = on ? button.dataset.labelStop : button.dataset.labelStart;
+  }
+
+  async function upload(button, blob, type) {
+    const form = button.closest("form");
+    const data = new FormData();
+    data.append("csrfmiddlewaretoken", form.querySelector("input[name=csrfmiddlewaretoken]").value);
+    data.append("idempotency_key", form.querySelector("input[name=idempotency_key]").value);
+    data.append("audio", blob, "voice." + (type.split("/")[1] || "webm").split(";")[0]);
+    button.disabled = true;
+    button.textContent = button.dataset.labelSending;
+    try {
+      const response = await fetch(button.dataset.url, {
+        method: "POST",
+        body: data,
+        headers: { "X-Requested-With": "fetch" },
+      });
+      if (response.redirected) {
+        window.location.assign(response.url);
+        return;
+      }
+      if (messages() && (response.headers.get("Content-Type") || "").startsWith("text/html")) {
+        replace(await response.text());
+        if (response.ok) setKey(response);
+        voiceStatus("");
+      } else {
+        voiceStatus(response.ok ? "" : (await response.text()) || button.dataset.labelFailed);
+      }
+    } catch (error) {
+      voiceStatus(button.dataset.labelFailed);
+    } finally {
+      button.disabled = false;
+      setRecording(button, false);
+    }
+  }
+
+  async function startRecording(button) {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error) {
+      voiceStatus(button.dataset.labelDenied);
+      return;
+    }
+    const type = TYPES.find(function (t) { return MediaRecorder.isTypeSupported(t); }) || "";
+    const media = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    recorder.media = media;
+    recorder.chunks = [];
+    media.addEventListener("dataavailable", function (event) {
+      if (event.data.size) recorder.chunks.push(event.data);
+    });
+    media.addEventListener("stop", function () {
+      clearTimeout(recorder.timer);
+      stream.getTracks().forEach(function (track) { track.stop(); });
+      const mime = (media.mimeType || type || "audio/webm").split(";")[0];
+      const blob = new Blob(recorder.chunks, { type: mime });
+      recorder.media = null;
+      if (blob.size) upload(button, blob, mime);
+      else setRecording(button, false);
+    });
+    media.start();
+    voiceStatus("");
+    setRecording(button, true);
+    const limit = parseInt(button.dataset.maxSeconds, 10) || 120;
+    recorder.timer = setTimeout(function () {
+      if (media.state === "recording") media.stop();
+    }, limit * 1000);
+  }
+
+  const voiceButton = document.querySelector("[data-voice-record]");
+  if (voiceButton && window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    voiceButton.hidden = false;
+    voiceButton.addEventListener("click", function () {
+      if (recorder.media && recorder.media.state === "recording") recorder.media.stop();
+      else if (!voiceButton.disabled) startRecording(voiceButton);
+    });
+  }
+
   const box = messages();
   if (box) box.scrollIntoView({ block: "end" });
   schedule();

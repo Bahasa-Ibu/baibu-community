@@ -250,6 +250,47 @@ class ChatFlag(models.Model):
         return f"{self.get_reason_display()} ({self.get_status_display()})"
 
 
+class AudioClip(models.Model):
+    """A voice message: the recording in private storage and its transcription.
+
+    The user's message is created empty when the audio arrives; the
+    transcript becomes its content once transcription succeeds.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Pending")
+        TRANSCRIBING = "transcribing", _("Transcribing")
+        TRANSCRIBED = "transcribed", _("Transcribed")
+        FAILED = "failed", _("Failed")
+
+    ACTIVE_STATUSES = (Status.PENDING, Status.TRANSCRIBING)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="audio_clips")
+    message = models.OneToOneField(Message, on_delete=models.CASCADE, related_name="audio")
+    storage_key = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=64)
+    size_bytes = models.PositiveIntegerField()
+    duration_seconds = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
+    attempt = models.PositiveSmallIntegerField(default=1)
+    provider = models.CharField(max_length=128, blank=True)
+    language = models.CharField(max_length=24, blank=True)
+    error = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    queued_at = models.DateTimeField(default=timezone.now)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        verbose_name = _("Audio clip")
+        verbose_name_plural = _("Audio clips")
+
+    def __str__(self) -> str:
+        return f"Audio {self.pk} ({self.status})"
+
+
 class ConversationEvent(models.Model):
     """Audit trail: what happened in a conversation and when. Append-only."""
 

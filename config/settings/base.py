@@ -292,6 +292,10 @@ CELERY_BEAT_SCHEDULE["delete-old-notifications"] = {
     "task": "baibu.notifications.tasks.delete_old_notifications",
     "schedule": 24 * 60 * 60,
 }
+CELERY_BEAT_SCHEDULE["chat-sweep-transcriptions"] = {
+    "task": "baibu.chat.tasks.sweep_transcriptions",
+    "schedule": env.int("CHAT_SWEEP_SECONDS", default=60),
+}
 # The health endpoint reports the worker as stale after this many seconds
 # without a heartbeat.
 WORKER_HEARTBEAT_STALE_SECONDS = env.int("WORKER_HEARTBEAT_STALE_SECONDS", default=300)
@@ -387,6 +391,35 @@ CHAT_SEARCH_PROVIDER = env("CHAT_SEARCH_PROVIDER", default="")
 CHAT_SEARCH_MAX_RESULTS = env.int("CHAT_SEARCH_MAX_RESULTS", default=5)
 # Rounds of tool calls the model may make before it must answer.
 CHAT_MAX_TOOL_ROUNDS = env.int("CHAT_MAX_TOOL_ROUNDS", default=2)
+# Voice messages: a SpeechToText subclass (see baibu.chat.speech). Empty
+# turns voice input off. LiteLLMSpeechToText reaches any transcription model
+# LiteLLM supports; MockSpeechToText makes up transcripts without a model.
+CHAT_STT_PROVIDER = env("CHAT_STT_PROVIDER", default="")
+# For LiteLLMSpeechToText: model name, optional endpoint, the *name* of the
+# environment variable holding the API key (never the key itself), timeout
+# and extra arguments for every call as JSON (e.g. {"language": "sw"}).
+CHAT_STT_MODEL = env("CHAT_STT_MODEL", default="")
+CHAT_STT_API_BASE = env("CHAT_STT_API_BASE", default="")
+CHAT_STT_API_KEY_ENV = env("CHAT_STT_API_KEY_ENV", default="")
+CHAT_STT_TIMEOUT = env.int("CHAT_STT_TIMEOUT", default=60)
+CHAT_STT_PARAMETERS = env.json("CHAT_STT_PARAMETERS", default={})
+# Largest recording accepted, in bytes, and the longest the browser records.
+CHAT_VOICE_MAX_BYTES = env.int("CHAT_VOICE_MAX_BYTES", default=10 * 1024 * 1024)
+CHAT_VOICE_MAX_SECONDS = env.int("CHAT_VOICE_MAX_SECONDS", default=120)
+# Audio formats accepted for upload.
+CHAT_VOICE_CONTENT_TYPES = env.list(
+    "CHAT_VOICE_CONTENT_TYPES",
+    default=[
+        "audio/webm",
+        "audio/ogg",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/aac",
+        "audio/mpeg",
+        "audio/wav",
+        "audio/x-wav",
+    ],
+)
 
 # NOTIFICATIONS
 # ------------------------------------------------------------------------------

@@ -4,5 +4,15 @@
   {{ form.idempotency_key }}
   <label for="{{ form.content.id_for_label }}" class="sr-only">{{ form.content.label }}</label>
   <div class="flex-1">{{ form.content }}</div>
+  {% if voice %}
+    {# Shown by chat.js only where the browser can record. #}
+    <button type="button" class="btn-secondary" hidden aria-pressed="false" data-voice-record
+            data-url="{{ voice.url }}" data-max-seconds="{{ voice.max_seconds }}"
+            data-label-start="{% translate "Record" %}" data-label-stop="{% translate "Stop and send" %}"
+            data-label-sending="{% translate "Sending…" %}"
+            data-label-denied="{% translate "The microphone could not be used." %}"
+            data-label-failed="{% translate "The recording could not be sent." %}">{% translate "Record" %}</button>
+  {% endif %}
   <button type="submit" class="btn-primary">{% translate "Send" %}</button>
 </form>
+{% if voice %}<p class="mt-1 text-sm text-red-700" role="status" data-voice-status></p>{% endif %}
