@@ -37,7 +37,7 @@ Tests never call external services or the network.
 | --- | --- |
 | Language models (LiteLLM) | Mocked. Tests patch the model call and return fixed responses, errors or timeouts. |
 | Search, SMS and messaging, email, error reporting, speech-to-text | Mock or console adapters, the same ones used in local development. Email uses Django's in-memory backend. |
-| Object storage | Local filesystem storage in a temporary directory. S3-compatible behaviour is tested against the adapter interface with a fake. |
+| Object storage | In-memory storage. The storage interface's own tests also run against a temporary directory and, in CI, a real open-source S3-compatible server (SeaweedFS). |
 | Celery | Tasks run eagerly in the test process, or are called directly. |
 | PostgreSQL | Real. Tests run against PostgreSQL, in the Compose stack and in CI, so that database behaviour matches production. |
 | Time | Frozen or controlled where a test depends on dates or ordering. |
@@ -188,6 +188,7 @@ feature lands.
 | TC-DEL-03 | Deletion request | Request with status `submitted` | Try to move it straight to `completed` | The transition is refused. The status stays `submitted`. |
 | TC-WL-01 | White-label settings | Settings set the platform name to "Example Platform" and the contact address to `help@example.org` | Load the home page and the sign-in email | The page title, header and email use "Example Platform" and `help@example.org`. The default platform name does not appear in the title, header or email. |
 | TC-WL-02 | White-label settings | A deployment override directory contains a replacement footer template | Load any page | The override footer is rendered instead of the default. |
+| TC-STO-01 | File storage | Each backend in turn: in-memory, a temporary directory, an S3-compatible server | Save a JSON payload with non-Latin text under a key, read it back, save again under the same key, delete it | The payload reads back unchanged. The second save returns a different key and the first file is untouched. After deletion the key reads as missing. Private files on the filesystem have no URL. |
 | TC-SUB-01 | Submission cleaning (planned) | User with `eval_only` consent | Submit text containing extra whitespace, control characters and a synthetic email address | Cleaned text has normalised whitespace, no control characters and the email address redacted. Raw text is stored separately. Status is `verified`, or `needs_review` if a rule flags it. The submission records consent tier `eval_only`. |
 | TC-SUB-02 | Submission cleaning (planned) | Storage adapter set to fail on write | Submit text | Status is `issue`. The error is logged. No partial cleaned file is left in storage. |
 | TC-CHT-01 | Chat run retry (planned) | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |

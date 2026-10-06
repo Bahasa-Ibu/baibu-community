@@ -10,6 +10,8 @@ import environ
 
 from baibu.core.branding import build_languages
 from baibu.core.branding import register_extra_languages
+from baibu.core.storage_config import S3Options
+from baibu.core.storage_config import build_storages
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 APPS_DIR = BASE_DIR / "baibu"
@@ -144,6 +146,28 @@ STATICFILES_FINDERS = [
 ]
 MEDIA_ROOT = env("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "var" / "media"))
 MEDIA_URL = "/media/"
+
+# FILE STORAGE
+# ------------------------------------------------------------------------------
+# "local" keeps files on disk; "s3" uses any S3-compatible object store. Code
+# stores contributor files through baibu.core.storage, never a vendor SDK.
+STORAGE_BACKEND = env("STORAGE_BACKEND", default="local")
+# Contributor files (submitted text, audio). Never served over HTTP.
+PRIVATE_MEDIA_ROOT = env("DJANGO_PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "var" / "private"))
+STORAGES = build_storages(
+    STORAGE_BACKEND,
+    media_root=MEDIA_ROOT,
+    private_root=PRIVATE_MEDIA_ROOT,
+    s3=S3Options(
+        bucket=env("S3_BUCKET", default=""),
+        endpoint_url=env("S3_ENDPOINT_URL", default=""),
+        region=env("S3_REGION", default=""),
+        access_key_id=env("S3_ACCESS_KEY_ID", default=""),
+        secret_access_key=env("S3_SECRET_ACCESS_KEY", default=""),
+        addressing_style=env("S3_ADDRESSING_STYLE", default="path"),
+        signed_url_seconds=env.int("S3_SIGNED_URL_SECONDS", default=3600),
+    ),
+)
 
 # TEMPLATES
 # ------------------------------------------------------------------------------

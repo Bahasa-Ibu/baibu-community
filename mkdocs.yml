@@ -58,6 +58,7 @@ nav:
       - developer/index.md
       - Architecture: developer/architecture.md
       - Configuration: developer/configuration.md
+      - File storage: developer/storage.md
       - White-label deployments: developer/white-label.md
   - Quality assurance:
       - Test plan: qa/test-plan.md

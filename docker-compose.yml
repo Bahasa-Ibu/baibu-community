@@ -50,6 +50,16 @@ services:
     command: sh -c "npm ci && npm run dev"
     profiles: ["css"]
 
+  # Optional S3-compatible object store (SeaweedFS, Apache-2.0) for trying
+  # STORAGE_BACKEND=s3 locally: docker compose --profile s3 up
+  # See docs/developer/storage.md.
+  s3:
+    image: chrislusf/seaweedfs:3.97
+    command: server -s3 -dir=/data -ip.bind=0.0.0.0
+    volumes:
+      - s3_data:/data
+    profiles: ["s3"]
+
   postgres:
     image: postgres:17
     env_file: .env
@@ -72,3 +82,4 @@ services:
 volumes:
   postgres_data: {}
   tailwind_node_modules: {}
+  s3_data: {}

@@ -23,10 +23,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 # STATIC (served by the app itself; a CDN or proxy cache is optional)
 # ------------------------------------------------------------------------------
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
-}
+STORAGES["staticfiles"] = {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"}  # noqa: F405
 
 # EMAIL (any SMTP server)
 # ------------------------------------------------------------------------------

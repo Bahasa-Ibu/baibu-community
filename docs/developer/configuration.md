@@ -18,7 +18,6 @@ copy `.env.example` to `.env`; Docker Compose passes it to every service.
 | `DJANGO_ADMIN_URL` | `admin/` | Path of the Django admin. Changing it reduces automated probing. |
 | `DJANGO_ADMINS` | empty | `Name <email>, Name <email>`: fallback recipients for operational email. |
 | `DJANGO_ADMIN_FORCE_ALLAUTH` | `False` (`True` in production) | Send admin sign-in through allauth, so rate limits and two-factor apply. |
-| `DJANGO_MEDIA_ROOT` | `var/media` | Where uploaded files are stored. |
 | `DJANGO_READ_DOT_ENV_FILE` | `False` | Read `.env` from the project root without Docker. |
 | `DJANGO_SECURE_SSL_REDIRECT` | `True` (production) | Redirect HTTP to HTTPS. Set `False` only if the proxy already does. |
 | `DJANGO_SECURE_HSTS_SECONDS` | `60` (production) | HSTS max-age. Raise it once HTTPS works. |
@@ -55,6 +54,22 @@ See [White-label deployments](white-label.md) for how these fit together.
 | `CONSENT_TEXT_VERSION` | `1` | Stored with each consent decision. Change it whenever the consent wording or privacy notice changes. |
 | `ACCOUNT_DELETION_REQUEST_RATE_LIMIT` | `3` | Deletion requests allowed per user per window. |
 | `ACCOUNT_DELETION_REQUEST_RATE_WINDOW_SECONDS` | `3600` | Length of that window. |
+
+## File storage
+
+See [File storage](storage.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `STORAGE_BACKEND` | `local` | `local` (filesystem) or `s3` (any S3-compatible object store). |
+| `DJANGO_MEDIA_ROOT` | `var/media` | `local`: where ordinary uploads are stored. |
+| `DJANGO_PRIVATE_MEDIA_ROOT` | `var/private` | `local`: where contributor files are stored. Never served. |
+| `S3_BUCKET` | **required** for `s3` | Bucket for both stores (prefixes `media/` and `private/`). Keep it private. |
+| `S3_ENDPOINT_URL` | empty (the SDK default) | Endpoint of the S3-compatible server, e.g. `https://s3.example.org`. |
+| `S3_REGION` | empty | Region name, if the server needs one. |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | empty | Credentials. Empty means the usual resolution (environment, instance role). |
+| `S3_ADDRESSING_STYLE` | `path` | `path` or `virtual`. Most self-hosted servers need `path`. |
+| `S3_SIGNED_URL_SECONDS` | `3600` | Lifetime of signed URLs for stored files. |
 
 ## Email
 
