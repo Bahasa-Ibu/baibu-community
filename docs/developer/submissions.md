@@ -93,6 +93,10 @@ and point `SUBMISSION_CLEANER` at the class.
 | `needs_review`, `issue`, `verified`, `rejected` | `pending` | Staff ("Clean again") |
 | `verified` | `rejected` | Staff |
 
+When staff accept (`verified`) or reject a submission, the contributor
+gets a [notification](notifications.md), and the reviewer and time are
+recorded.
+
 Staff use the Django admin for now: filter by status, read the submitted and
 cleaned text side by side, add notes, and use the actions *Mark as
 verified*, *Mark as rejected* and *Clean again*. A dedicated review queue is

@@ -23,6 +23,7 @@ urlpatterns += i18n_patterns(
     path("users/", include("baibu.users.urls", namespace="users")),
     path("contribute/", include("baibu.submissions.urls", namespace="submissions")),
     path("chat/", include("baibu.chat.urls", namespace="chat")),
+    path("notifications/", include("baibu.notifications.urls", namespace="notifications")),
     path(settings.ADMIN_URL, admin.site.urls),
     prefix_default_language=False,
 )

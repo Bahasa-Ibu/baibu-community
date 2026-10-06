@@ -118,6 +118,15 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_SEARCH_MAX_RESULTS` | `5` | Results per search. |
 | `CHAT_MAX_TOOL_ROUNDS` | `2` | Rounds of tool calls before the model must answer. |
 
+## Notifications
+
+See [Notifications](notifications.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `NOTIFICATIONS_ENABLED` | `True` | Create in-app notifications. |
+| `NOTIFICATIONS_RETENTION_DAYS` | `180` | Read notifications older than this are deleted daily. |
+
 ## Email
 
 Any SMTP server works. Local development prints emails to the `django`

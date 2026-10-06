@@ -181,6 +181,17 @@ translations.
   (cleaner error, missing raw text, storage error), the status is `issue`
   with the reason, and no cleaned file is left behind.
 - Deleting a submission, or its user, deletes its stored files.
+- A staff decision (accept or reject) records the reviewer and time and
+  notifies the contributor once; a refused transition notifies nobody.
+
+**Notification.** A message in a user's inbox.
+
+- Users see only their own notifications. Opening one marks it read and
+  follows its link only if the link is inside the platform.
+- Registered kinds are translated when shown, not when created.
+- Creating a notification never fails the caller.
+- Read notifications past the retention period are deleted; unread ones
+  are kept.
 
 **Conversation, Message and Run** (stage 2). The assistant chat.
 
