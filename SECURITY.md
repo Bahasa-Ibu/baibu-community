@@ -37,9 +37,9 @@ This policy will be updated when the first release is made.
 
 | Step | Target |
 | --- | --- |
-| Acknowledge your report | Within 3 working days |
-| Initial assessment and severity | Within 10 working days |
-| Fix for a critical or high-severity issue | Within 30 days of confirmation, where possible |
+| Acknowledge your report | Within 14 days |
+| Initial assessment and severity | Within 30 days |
+| Fix for a critical or high-severity issue | As soon as we reasonably can, usually within 90 days of confirmation |
 | Fix for other issues | In a planned release, based on severity |
 
 We will keep you informed of progress, and tell you when the fix is
