@@ -1,0 +1,29 @@
+{% load i18n %}
+<div id="chat-messages" class="space-y-4" data-pending="{{ pending|yesno:'true,false' }}"
+     data-url="{% url 'chat:messages' conversation.pk %}" aria-live="polite">
+  {% for item in items %}
+    {% with message=item.message %}
+      <div class="flex {% if message.role == 'user' %}justify-end{% endif %}">
+        <div class="max-w-[85%] whitespace-pre-line rounded-2xl px-4 py-3 {% if message.role == 'user' %}bg-brand text-white{% else %}border border-stone-200 bg-white text-stone-900{% endif %}">{{ message.content }}</div>
+      </div>
+      {% if item.failed_run %}
+        <div class="flex justify-end">
+          <div class="flex items-center gap-3 text-sm text-red-700">
+            <span>{% translate "No reply could be generated." %}</span>
+            {% if item.can_retry %}
+              <form method="post" action="{% url 'chat:retry' item.failed_run.pk %}" data-chat-action>
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary">{% translate "Try again" %}</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endfor %}
+  {% if pending %}
+    <div class="flex"><div class="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-stone-500">{% translate "Writing a reply…" %}</div></div>
+    <noscript><p class="text-sm"><a href="">{% translate "Refresh to see the reply." %}</a></p></noscript>
+  {% endif %}
+  {% if error %}<p class="text-sm text-red-700" role="alert">{{ error }}</p>{% endif %}
+</div>

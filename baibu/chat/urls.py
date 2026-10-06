@@ -1,0 +1,15 @@
+from django.urls import path
+
+from . import views
+
+app_name = "chat"
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("consent/", views.consent_view, name="consent"),
+    path("new/", views.new_conversation, name="new"),
+    path("<uuid:pk>/", views.conversation_view, name="conversation"),
+    path("<uuid:pk>/messages/", views.messages_view, name="messages"),
+    path("<uuid:pk>/send/", views.send_view, name="send"),
+    path("<uuid:pk>/delete/", views.delete_view, name="delete"),
+    path("runs/<uuid:run_id>/retry/", views.retry_view, name="retry"),
+]

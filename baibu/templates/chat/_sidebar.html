@@ -1,0 +1,18 @@
+{% load i18n %}
+<aside class="md:w-64 md:shrink-0">
+  <a href="{% url 'chat:home' %}" class="btn-primary mb-4 w-full">{% translate "New chat" %}</a>
+  <nav aria-label="{% translate 'Your conversations' %}">
+    <ul class="space-y-1 text-sm">
+      {% for item in conversations %}
+        <li>
+          <a href="{% url 'chat:conversation' item.pk %}"
+             class="block truncate rounded-lg px-3 py-2 no-underline hover:bg-stone-100 {% if conversation and item.pk == conversation.pk %}bg-stone-100 font-semibold text-stone-900{% else %}text-stone-700{% endif %}">
+            {{ item.title|default:_("New conversation") }}
+          </a>
+        </li>
+      {% empty %}
+        <li class="px-3 text-stone-500">{% translate "No conversations yet." %}</li>
+      {% endfor %}
+    </ul>
+  </nav>
+</aside>

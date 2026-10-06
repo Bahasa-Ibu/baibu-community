@@ -89,6 +89,22 @@ See [Submissions and cleaning](submissions.md).
 | `SUBMISSION_CLEANER_TIMEOUT` | `60` | `LiteLLMCleaner`: seconds to wait for the model. |
 | `SUBMISSION_MIN_QUALITY` | `50` | Texts a cleaner scores below this (0 to 100) go to review. |
 
+## Chat
+
+See [Assistant chat](chat.md). Models and prompts are managed in the admin.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `CHAT_ENABLED` | `True` | Offer the assistant chat. |
+| `CHAT_CONSENT_SCOPE` | `chat` | Consent scope users choose before chatting. |
+| `CHAT_MODEL` | `mock` | Model used when no model variant is the default. `mock` needs no model. |
+| `CHAT_MODEL_TIMEOUT` | `60` | Seconds to wait for the model. |
+| `CHAT_CONTEXT_MESSAGES` | `20` | Earlier messages sent to the model with each new one. |
+| `CHAT_MAX_MESSAGE_CHARACTERS` | `4000` | Longest message accepted. |
+| `CHAT_MAX_ATTEMPTS` | `3` | Attempts at one reply, including retries. |
+| `CHAT_RUN_TIMEOUT_SECONDS` | `180` | A reply still running after this long is failed so the user can retry. |
+| `CHAT_SWEEP_SECONDS` | `60` | How often beat checks for stuck replies. |
+
 ## Email
 
 Any SMTP server works. Local development prints emails to the `django`

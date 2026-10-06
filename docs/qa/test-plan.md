@@ -4,7 +4,8 @@ This document describes how Baibu Community Edition is tested: the testing
 strategy, tools, coverage targets, sample test cases, the core data
 structures under test and the pull request workflow.
 
-The skeleton (stage 0) and text submissions (stage 1) are built. This plan
+The skeleton (stage 0), text submissions (stage 1) and the assistant chat
+(stage 2) are being built. This plan
 covers them and sets out how later stages will be tested. It is updated as
 features land.
 
@@ -169,16 +170,23 @@ translations.
   with the reason, and no cleaned file is left behind.
 - Deleting a submission, or its user, deletes its stored files.
 
-### Planned
-
 **Conversation, Message and Run** (stage 2). The assistant chat.
 
 - A Conversation belongs to one user and holds an ordered list of Messages.
-- A Message is from the user or the assistant.
+  Users choose a chat consent tier before their first conversation; the
+  tier in force is recorded on the conversation.
+- A Message is from the user or the assistant. The same idempotency key
+  sent twice creates one message and one run.
 - A Run is one attempt to generate an assistant reply. It records the
-  model configuration used, its status and any error. A failed Run can be
-  retried; a retry creates a new Run and does not duplicate the user's
-  message.
+  model and prompt version used, its status and any error. A run is
+  executed at most once. A failed Run can be retried; a retry creates a new
+  Run and does not duplicate the user's message. After `CHAT_MAX_ATTEMPTS`
+  attempts no further retry is allowed.
+- A conversation has at most one queued or running run.
+- Runs stuck beyond the timeout are failed; a reply arriving after that is
+  discarded.
+- Prompt versions cannot be edited once saved; one version per name is
+  active. Conversation events cannot be edited.
 
 ## Sample test cases
 
@@ -200,8 +208,8 @@ feature lands.
 | TC-STO-01 | File storage | Each backend in turn: in-memory, a temporary directory, an S3-compatible server | Save a JSON payload with non-Latin text under a key, read it back, save again under the same key, delete it | The payload reads back unchanged. The second save returns a different key and the first file is untouched. After deletion the key reads as missing. Private files on the filesystem have no URL. |
 | TC-SUB-01 | Submission cleaning | User with `eval_only` consent | Submit text containing extra whitespace, control characters and a synthetic email address | Cleaned text has normalised whitespace, no control characters and the email address redacted. Raw text is stored separately. Status is `verified`, or `needs_review` if the cleaner flags it. The submission records consent tier `eval_only`. |
 | TC-SUB-02 | Submission cleaning | Storage set to fail on write | Submit text | Status is `issue`. The error is logged. No partial cleaned file is left in storage. |
-| TC-CHT-01 | Chat run retry (planned) | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
-| TC-CHT-02 | Chat run retry (planned) | Mocked model always raises an error | Send a message and retry up to the configured limit | Each attempt creates a Run. After the limit, no further retries are allowed and the user sees an error message. No assistant message is created. |
+| TC-CHT-01 | Chat run retry | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
+| TC-CHT-02 | Chat run retry | Mocked model always raises an error | Send a message and retry up to the configured limit | Each attempt creates a Run. After the limit, no further retries are allowed and the user sees an error message. No assistant message is created. |
 
 ## Pull request workflow
 
