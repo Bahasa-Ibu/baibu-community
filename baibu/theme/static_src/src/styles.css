@@ -1,0 +1,81 @@
+/* Theme for the platform. Deployments change the brand colour at runtime
+   with PLATFORM_BRAND_COLOR; no rebuild is needed for that. */
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+@source "../../../templates";
+@source "../../../../deployment/templates";
+
+@theme {
+  --color-brand: #0f766e;
+  --color-brand-dark: color-mix(in oklab, var(--color-brand) 75%, black);
+  --color-brand-soft: color-mix(in oklab, var(--color-brand) 12%, white);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-stone-50 text-stone-900 antialiased;
+  }
+  a {
+    @apply text-brand underline-offset-2 hover:underline;
+  }
+  h1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  h2 {
+    @apply text-lg font-semibold;
+  }
+  label {
+    @apply mb-1 block text-sm font-medium text-stone-700;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    @apply block w-full rounded-lg border-stone-300 shadow-sm focus:border-brand focus:ring-brand;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply text-brand focus:ring-brand;
+  }
+  form p,
+  form > div {
+    @apply mb-4;
+  }
+  .errorlist {
+    @apply mb-2 text-sm text-red-700;
+  }
+  .helptext {
+    @apply mt-1 block text-sm text-stone-500;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold no-underline transition bg-brand text-white hover:bg-brand-dark hover:no-underline;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold no-underline transition border border-stone-300 bg-white text-stone-800 hover:bg-stone-100 hover:no-underline;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold no-underline transition bg-red-700 text-white hover:bg-red-800 hover:no-underline;
+  }
+  .card {
+    @apply rounded-2xl border border-stone-200 bg-white p-6 shadow-sm;
+  }
+  .prose-page h2 {
+    @apply mt-8 mb-2;
+  }
+  .prose-page p,
+  .prose-page ul {
+    @apply mb-4 leading-relaxed;
+  }
+  .prose-page ul {
+    @apply list-disc pl-6;
+  }
+}

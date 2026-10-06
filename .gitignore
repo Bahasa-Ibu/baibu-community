@@ -18,7 +18,7 @@ var/
 
 # Node / Tailwind
 node_modules/
-baibu/theme/static/css/dist/
+baibu/static/css/dist/
 
 # Docs
 site/

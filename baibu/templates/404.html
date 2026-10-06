@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}404{% endblock title %}
+{% block content %}
+  <div class="py-16 text-center">
+    <h1 class="text-4xl">404</h1>
+    <p class="mt-4 text-stone-700">{% translate "We could not find that page." %}</p>
+    <p class="mt-8"><a href="/" class="btn-secondary">{% translate "Back to the home page" %}</a></p>
+  </div>
+{% endblock content %}

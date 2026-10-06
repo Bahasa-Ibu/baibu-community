@@ -1,0 +1,17 @@
+{% load static %}<!DOCTYPE html>
+{% comment %}Rendered without request context, so it must not depend on context processors.{% endcomment %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Server error</title>
+    <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
+  </head>
+  <body class="flex min-h-screen items-center justify-center">
+    <main class="text-center">
+      <h1 class="text-4xl">500</h1>
+      <p class="mt-4 text-stone-700">Something went wrong on our side. Please try again later.</p>
+      <p class="mt-8"><a href="/" class="btn-secondary">Back to the home page</a></p>
+    </main>
+  </body>
+</html>

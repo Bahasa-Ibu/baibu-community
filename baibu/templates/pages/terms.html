@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Terms of use" %}{% endblock title %}
+{% block content %}
+  {% comment %}
+    Placeholder. Every deployment must replace this page with its own terms
+    by adding templates/pages/terms.html under DEPLOYMENT_DIR.
+  {% endcomment %}
+  <article class="prose-page">
+    <h1>{% translate "Terms of use" %}</h1>
+    <p class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+      {% blocktranslate with name=platform.name %}This is a placeholder. The organisation running {{ name }} must publish its own terms of use here before inviting contributors.{% endblocktranslate %}
+    </p>
+  </article>
+{% endblock content %}

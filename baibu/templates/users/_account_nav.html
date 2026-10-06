@@ -1,0 +1,15 @@
+{% load i18n %}
+<nav class="mb-6 flex flex-wrap gap-2 text-sm" aria-label="{% translate 'Account' %}">
+  {% url 'users:account' as account_url %}
+  {% url 'users:consent' as consent_url %}
+  {% url 'account_email' as email_url %}
+  {% url 'account_change_password' as password_url %}
+  {% url 'mfa_index' as mfa_url %}
+  {% url 'users:account_deletion' as deletion_url %}
+  <a href="{{ account_url }}" class="{% if request.path == account_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Profile" %}</a>
+  <a href="{{ consent_url }}" class="{% if request.path == consent_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Data use" %}</a>
+  <a href="{{ email_url }}" class="btn-secondary">{% translate "Email" %}</a>
+  <a href="{{ password_url }}" class="btn-secondary">{% translate "Password" %}</a>
+  <a href="{{ mfa_url }}" class="btn-secondary">{% translate "Two-factor" %}</a>
+  <a href="{{ deletion_url }}" class="{% if request.path == deletion_url %}btn-primary{% else %}btn-secondary{% endif %}">{% translate "Delete account" %}</a>
+</nav>

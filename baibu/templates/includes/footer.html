@@ -1,0 +1,11 @@
+{% load i18n %}
+<footer class="border-t border-stone-200 bg-white">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-stone-600">
+    <p>&copy; {% now "Y" %} {{ platform.name }}</p>
+    <p class="flex gap-4">
+      <a href="{% url 'privacy' %}">{% translate "Privacy" %}</a>
+      <a href="{% url 'terms' %}">{% translate "Terms" %}</a>
+      {% if platform.contact_email %}<a href="mailto:{{ platform.contact_email }}">{% translate "Contact" %}</a>{% endif %}
+    </p>
+  </div>
+</footer>

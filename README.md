@@ -1,6 +1,8 @@
 # Baibu Community Edition
 
-<!-- CI badge -->
+[![CI](https://github.com/Bahasa-Ibu/baibu-community/actions/workflows/ci.yml/badge.svg)](https://github.com/Bahasa-Ibu/baibu-community/actions/workflows/ci.yml)
+[![Docs](https://github.com/Bahasa-Ibu/baibu-community/actions/workflows/docs.yml/badge.svg)](https://bahasa-ibu.github.io/baibu-community/)
+[![Coverage report](https://img.shields.io/badge/coverage-report-blue)](https://bahasa-ibu.github.io/baibu-community/coverage/)
 
 An open-source, self-hostable, white-label platform for collecting community
 language contributions and running an assistant chat in local languages.
@@ -9,9 +11,9 @@ Organisations can use it to stand up their own platform, in their own country
 and languages, under their own name. The repository ships in English only.
 Each deployment adds its own languages, branding, prompts and topics.
 
-**Status: early.** The project is at the skeleton stage. The application
-code, Docker Compose stack and tests are being built now. Expect breaking
-changes until a 1.0 release.
+**Status: early.** The application skeleton runs: accounts, consent and
+deletion requests on a Docker Compose stack, with tests. Feature stages
+follow. Expect breaking changes until a 1.0 release.
 
 ## Features
 
@@ -20,13 +22,13 @@ Planned features are delivered in stages. Each stage is tracked in
 
 | Stage | Features | Status |
 | --- | --- | --- |
-| 0. Skeleton | Docker Compose stack, email sign-in, profile, append-only consent history, account deletion requests, white-label settings | In progress |
+| 0. Skeleton | Docker Compose stack, email sign-in, profile, append-only consent history, account deletion requests, white-label settings | Done |
 | 1. Submissions | Text submissions, cleaning pipeline, storage adapters (local filesystem, S3-compatible) | Planned |
 | 2. Chat and review | Assistant chat, staff review queue, notifications, translation workflow | Planned |
 | 3. Extensions | Voice input, usage metrics, conversation topic tagging, phone sign-in via a messaging adapter | Planned |
 
-What exists today: the licence, project documents, documentation site and
-contribution process. Application features are listed above as they land.
+What exists today: stage 0, the project documents, the documentation site
+and the contribution process.
 
 ### Design principles
 
@@ -49,16 +51,16 @@ contribution process. Application features are listed above as they land.
 
 You need Git and Docker with Docker Compose.
 
-> The application skeleton is still being built. These commands describe the
-> intended workflow and will work once the skeleton lands
-> ([#7](https://github.com/Bahasa-Ibu/baibu-community/issues/7)).
-
 ```sh
 git clone https://github.com/Bahasa-Ibu/baibu-community.git
 cd baibu-community
 cp .env.example .env
 docker compose up --build        # app on http://localhost:8000
 ```
+
+Emails, such as the link to confirm a new account, are printed in the
+`django` container log. `http://localhost:8000/health/` reports whether the
+database, cache and worker are up.
 
 Create an admin user:
 
@@ -81,8 +83,10 @@ with safe development defaults. Copy it to `.env` and edit. Never commit
 `.env`.
 
 Django settings live in `config/settings/` (`base`, `local`, `test`,
-`production`). A full configuration reference will be published in the
-[developer documentation](https://bahasa-ibu.github.io/baibu-community/developer/).
+`production`). Every variable is listed in the
+[configuration reference](https://bahasa-ibu.github.io/baibu-community/developer/configuration/),
+and the [white-label guide](https://bahasa-ibu.github.io/baibu-community/developer/white-label/)
+explains how to give a deployment its own name, look, pages and languages.
 
 ## Documentation
 

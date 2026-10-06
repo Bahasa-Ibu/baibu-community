@@ -1,0 +1,17 @@
+{% comment %}Renders a form's errors and fields. Usage: {% include "includes/form_fields.html" with form=form %}{% endcomment %}
+{% if form.non_field_errors %}
+  <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ form.non_field_errors }}</div>
+{% endif %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+{% for field in form.visible_fields %}
+  {% if field.name == "website" %}
+    <div class="hidden" aria-hidden="true">{{ field }}</div>
+  {% elif field.widget_type == "checkbox" %}
+    <div>
+      <label for="{{ field.id_for_label }}" class="flex items-start gap-2 font-normal">{{ field }}<span>{{ field.label }}</span></label>
+      {{ field.errors }}
+    </div>
+  {% else %}
+    {{ field.as_field_group }}
+  {% endif %}
+{% endfor %}

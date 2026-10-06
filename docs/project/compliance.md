@@ -23,7 +23,7 @@ status.
 | Open-source licence | Done | [LICENSE](https://github.com/Bahasa-Ibu/baibu-community/blob/main/LICENSE) (Apache-2.0), [NOTICE](https://github.com/Bahasa-Ibu/baibu-community/blob/main/NOTICE), rationale in the [charter](charter.md#licence) | |
 | Project charter | Done | [PROJECT_CHARTER.md](https://github.com/Bahasa-Ibu/baibu-community/blob/main/PROJECT_CHARTER.md), [charter page](charter.md) | [#1](https://github.com/Bahasa-Ibu/baibu-community/issues/1) |
 | README | Done | [README.md](https://github.com/Bahasa-Ibu/baibu-community/blob/main/README.md) | [#2](https://github.com/Bahasa-Ibu/baibu-community/issues/2) |
-| Public documentation site | In progress | This site, built with MkDocs from [docs/](https://github.com/Bahasa-Ibu/baibu-community/tree/main/docs). Automated deploy to GitHub Pages pending. | [#3](https://github.com/Bahasa-Ibu/baibu-community/issues/3) |
+| Public documentation site | In progress | This site, built with MkDocs from [docs/](https://github.com/Bahasa-Ibu/baibu-community/tree/main/docs) and deployed to GitHub Pages on every merge to `main` by the [docs workflow](https://github.com/Bahasa-Ibu/baibu-community/blob/main/.github/workflows/docs.yml). Live once the repository is public. | [#3](https://github.com/Bahasa-Ibu/baibu-community/issues/3) |
 | Quality assurance document | Done | [Test plan](../qa/test-plan.md) | [#4](https://github.com/Bahasa-Ibu/baibu-community/issues/4) |
 | Code of conduct | Done | [CODE_OF_CONDUCT.md](https://github.com/Bahasa-Ibu/baibu-community/blob/main/CODE_OF_CONDUCT.md) (Contributor Covenant 2.1), [reporting guide](../community/conduct-reporting.md) | [#5](https://github.com/Bahasa-Ibu/baibu-community/issues/5) |
 | Pull request workflow | In progress | [Pull request template](https://github.com/Bahasa-Ibu/baibu-community/blob/main/.github/PULL_REQUEST_TEMPLATE.md), [workflow in the test plan](../qa/test-plan.md#pull-request-workflow). Branch protection on `main` when the repository is public. | [#6](https://github.com/Bahasa-Ibu/baibu-community/issues/6) |
@@ -37,9 +37,9 @@ status.
 | Licence publicly visible | Planned | [LICENSE](https://github.com/Bahasa-Ibu/baibu-community/blob/main/LICENSE), visible once the repository is public | |
 | Contributing guide | Done | [CONTRIBUTING.md](https://github.com/Bahasa-Ibu/baibu-community/blob/main/CONTRIBUTING.md), [contributing page](../community/contributing.md) | [#8](https://github.com/Bahasa-Ibu/baibu-community/issues/8) |
 | Public issues board | Planned | [Issues](https://github.com/Bahasa-Ibu/baibu-community/issues) and a public project board | [#12](https://github.com/Bahasa-Ibu/baibu-community/issues/12) |
-| Developer documentation | Planned | [Developer section](../developer/index.md) | [#11](https://github.com/Bahasa-Ibu/baibu-community/issues/11) |
-| CI with status badge | In progress | GitHub Actions; badge in the [README](https://github.com/Bahasa-Ibu/baibu-community/blob/main/README.md) | [#9](https://github.com/Bahasa-Ibu/baibu-community/issues/9) |
-| 15% test coverage | Planned | [Coverage report](https://bahasa-ibu.github.io/baibu-community/coverage/) | [#10](https://github.com/Bahasa-Ibu/baibu-community/issues/10) |
+| Developer documentation | Done | [Architecture](../developer/architecture.md), [configuration reference](../developer/configuration.md), [white-label guide](../developer/white-label.md) | [#11](https://github.com/Bahasa-Ibu/baibu-community/issues/11) |
+| CI with status badge | Done | [CI workflow](https://github.com/Bahasa-Ibu/baibu-community/blob/main/.github/workflows/ci.yml) (lint, tests with coverage, migration check, image build); badge in the [README](https://github.com/Bahasa-Ibu/baibu-community/blob/main/README.md) | [#9](https://github.com/Bahasa-Ibu/baibu-community/issues/9) |
+| 15% test coverage | Done | [Coverage report](https://bahasa-ibu.github.io/baibu-community/coverage/), rebuilt on every merge to `main` | [#10](https://github.com/Bahasa-Ibu/baibu-community/issues/10) |
 
 ## Q3: Community
 

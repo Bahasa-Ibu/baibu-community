@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% comment %}Sign-in, sign-up and account security pages from django-allauth use the site layout.{% endcomment %}
+{% block title %}{% block head_title %}{% endblock head_title %}{% endblock title %}
+{% block main %}
+  <main class="mx-auto w-full max-w-md flex-1 px-4 py-10">
+    <div class="card">
+      {% block content %}{% endblock content %}
+    </div>
+  </main>
+{% endblock main %}

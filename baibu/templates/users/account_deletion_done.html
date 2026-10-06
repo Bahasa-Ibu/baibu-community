@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Deletion requested" %}{% endblock title %}
+{% block content %}
+  <div class="card mx-auto max-w-md">
+    <h1 class="mb-2">{% translate "Deletion requested" %}</h1>
+    <p class="mb-4 text-stone-700">{% translate "Your account has been deactivated and you have been signed out." %}</p>
+    <p class="text-sm text-stone-600">
+      {% blocktranslate %}Your receipt number is {{ receipt_id }}. Quote it if you contact us about this request.{% endblocktranslate %}
+      {% if platform.contact_email %}<a href="mailto:{{ platform.contact_email }}">{{ platform.contact_email }}</a>{% endif %}
+    </p>
+  </div>
+{% endblock content %}

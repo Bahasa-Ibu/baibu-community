@@ -9,9 +9,9 @@ and languages, under its own name. The platform ships in English. Each
 deployment adds its own languages, branding, prompts and topics.
 
 !!! note "Status: early"
-    The project is at the skeleton stage. The application code, Docker
-    Compose stack and tests are being built now. Expect breaking changes
-    until a 1.0 release. See the [roadmap](project/roadmap.md).
+    The application skeleton runs (accounts, consent, deletion requests,
+    white-label settings, on Docker Compose with tests). Feature stages
+    follow. Expect breaking changes until a 1.0 release. See the [roadmap](project/roadmap.md).
 
 ## What it does
 

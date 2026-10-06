@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Complete your profile" %}{% endblock title %}
+{% block content %}
+  <div class="card mx-auto max-w-md">
+    <h1 class="mb-2">{% translate "Complete your profile" %}</h1>
+    <p class="mb-6 text-sm text-stone-700">{% translate "We need a few details before you continue." %}</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" with form=form %}
+      <button type="submit" class="btn-primary">{% translate "Continue" %}</button>
+    </form>
+  </div>
+{% endblock content %}
