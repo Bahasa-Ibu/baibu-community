@@ -7,6 +7,7 @@ see ``.env.example`` and the configuration reference in the docs.
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 from baibu.core.branding import build_languages
 from baibu.core.branding import register_extra_languages
@@ -100,6 +101,7 @@ LOCAL_APPS = [
     "baibu.notifications",
     "baibu.staff",
     "baibu.localization",
+    "baibu.metrics",
     "baibu.theme",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -434,3 +436,23 @@ NOTIFICATIONS_RETENTION_DAYS = env.int("NOTIFICATIONS_RETENTION_DAYS", default=1
 LOCALIZATION_SYNC = env.bool("LOCALIZATION_SYNC", default=True)
 # How often each process checks (through the cache) for a new publication.
 LOCALIZATION_SYNC_SECONDS = env.int("LOCALIZATION_SYNC_SECONDS", default=10)
+
+# USAGE METRICS
+# ------------------------------------------------------------------------------
+# Count-only daily rollups for the staff usage page (/staff/usage/). Days are
+# calendar days in TIME_ZONE. Beat computes yesterday at this local time.
+METRICS_COMPUTE_HOUR = env.int("METRICS_COMPUTE_HOUR", default=2)
+METRICS_COMPUTE_MINUTE = env.int("METRICS_COMPUTE_MINUTE", default=15)
+CELERY_BEAT_SCHEDULE["metrics-daily"] = {
+    "task": "baibu.metrics.tasks.compute_daily_metrics",
+    "schedule": crontab(hour=METRICS_COMPUTE_HOUR, minute=METRICS_COMPUTE_MINUTE),
+}
+# If the worker was down, the nightly task fills in up to this many missed days.
+METRICS_CATCH_UP_DAYS = env.int("METRICS_CATCH_UP_DAYS", default=7)
+# Weekly cohorts: how many weeks after joining retention is counted.
+METRICS_RETENTION_WEEKS = env.int("METRICS_RETENTION_WEEKS", default=8)
+# Breakdowns by language or consent tier show counts from 1 up to this size
+# minus one as "fewer than N", so small groups are not singled out. 0 or 1: off.
+METRICS_MIN_GROUP_SIZE = env.int("METRICS_MIN_GROUP_SIZE", default=5)
+# Longest date range the usage page and its CSV export accept.
+METRICS_MAX_RANGE_DAYS = env.int("METRICS_MAX_RANGE_DAYS", default=366)

@@ -11,6 +11,8 @@ This section is for people who change the code or run a deployment.
   to write a messaging provider.
 - [Translations](translations.md): how translators edit and publish the
   interface in a deployment's languages.
+- [Usage metrics](metrics.md): the count-only rollups behind the staff usage
+  page, with the exact definition of every metric.
 
 To run the platform locally, start with [Getting started](../getting-started.md).
 To send a change, read the [contributing guide](../community/contributing.md).
@@ -44,6 +46,7 @@ baibu/
   users/             accounts, profile, consent history, account deletion requests
   submissions/       text contributions and cleaning
   localization/      interface translations: drafts, publishing, loading
+  metrics/           count-only usage rollups and the staff usage page
   theme/             Tailwind source (static_src/); builds static/css/dist/styles.css
   templates/         Django templates; allauth/ restyles the sign-in pages
   static/            images, built CSS

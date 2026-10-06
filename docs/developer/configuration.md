@@ -146,6 +146,19 @@ See [Translations](translations.md).
 | `LOCALIZATION_SYNC` | `True` | Load translations published from the `/translations/` pages into every web and worker process. Turn off only if you manage catalogues as files. |
 | `LOCALIZATION_SYNC_SECONDS` | `10` | How often each process checks the cache for a new publication. `0` checks before every request and task. |
 
+## Usage metrics
+
+See [Usage metrics](metrics.md).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `METRICS_COMPUTE_HOUR` | `2` | Hour (0 to 23, in `DJANGO_TIME_ZONE`) at which beat computes the previous day's rollups. |
+| `METRICS_COMPUTE_MINUTE` | `15` | Minute of that hour. |
+| `METRICS_CATCH_UP_DAYS` | `7` | If the worker missed nights, the nightly task fills in up to this many days back. Use `compute_metrics` for more. |
+| `METRICS_RETENTION_WEEKS` | `8` | Weeks after joining for which weekly retention is counted. |
+| `METRICS_MIN_GROUP_SIZE` | `5` | Breakdowns by language or consent tier show counts from 1 up to this number minus one as `<N` on the usage page and in the CSV export. `0` or `1` turns this off. |
+| `METRICS_MAX_RANGE_DAYS` | `366` | Longest date range the usage page and export accept. |
+
 ## Email
 
 Any SMTP server works. Local development prints emails to the `django`

@@ -265,6 +265,22 @@ the staff queues.
 - Only the owner can play back or retry a recording. Deleting the message,
   conversation or account deletes the stored recording.
 
+**DailyMetric** (usage metrics). Count-only daily rollups; see
+[Usage metrics](../developer/metrics.md) for every definition.
+
+- Values are aggregate integers per day, name and dimension (unique
+  together). No text, names, email addresses or per-user rows are stored or
+  shown.
+- Days are calendar days in the platform time zone.
+- A user is active in a period if they sent a chat message or created a
+  submission in it. Weekly and monthly active users are distinct counts over
+  the 7 and 30 days ending on the day, never sums of daily values.
+- Computing a day again replaces its stored values, including removing
+  breakdown values that no longer occur.
+- Only signed-in staff with the `metrics.view_dailymetric` permission can see
+  the usage page and its CSV export. Breakdowns by language or consent show
+  counts below `METRICS_MIN_GROUP_SIZE` as `<N`.
+
 ## Sample test cases
 
 IDs use the area prefix and a number. "Planned" cases are written when the
@@ -294,6 +310,12 @@ feature lands.
 | TC-REV-01 | Staff review | Two submissions in `needs_review`; a signed-in staff member | Open the first, choose *Accept*, save | The first is `verified`, with the reviewer and time recorded; the contributor has one notification; the second submission opens next. |
 | TC-REV-02 | Staff review | A report of an assistant reply; two staff members open it | Both choose a decision and save | The first decision is kept. The second reviewer is told it was already decided. The reporter has one notification. |
 | TC-CHT-01 | Chat run retry | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
+| TC-MET-01 | Usage metrics | Platform time zone seven hours ahead of UTC. A user sends chat messages at 00:10 and 23:30 local time on day D and at 00:30 on D+1. | Compute D and D+1 | D counts two user messages and D+1 one, following local days, not UTC days (00:30 on D+1 is still day D in UTC). |
+| TC-MET-02 | Usage metrics | On day D one user chats, one submits, one does both, one only receives an assistant message; other users were active 6, 7, 29 and 30 days before | Compute D | Active users 3; users who chatted 2, contributed 2; 7-day active counts the user from 6 days before but not 7; 30-day active counts 29 days before but not 30. |
+| TC-MET-03 | Usage metrics | Day D computed once; a conversation in French is then deleted | Compute D again | One row per name and dimension; the French conversation breakdown is gone and totals match the remaining data. |
+| TC-MET-04 | Usage metrics | Three users joined in one week; two are active two weeks later, one only the week before | Compute a day two weeks after joining | Cohort size 3; week-2 retention 2. |
+| TC-MET-05 | Usage metrics | Rollups stored for yesterday. A signed-out visitor, a non-staff user, a staff member without the permission, a staff member with it. | Open `/staff/usage/` and `/staff/usage/export.csv` | Sign-in page; 403; 403; 200. The page and CSV show counts only, with no message text, name or email address; a language with one conversation shows as `<5`. |
+| TC-MET-06 | Usage metrics | No rollups stored | Open `/staff/usage/` | The empty state explains the nightly task and the `compute_metrics` command. |
 | TC-CHT-02 | Chat run retry | Mocked model always raises an error | Send a message and retry up to the configured limit | Each attempt creates a Run. After the limit, no further retries are allowed and the user sees an error message. No assistant message is created. |
 | TC-L10N-01 | Translations | Languages English and a test language; no source strings yet | Extract the source strings | A template is stored with every marked string from the code and deployment templates. A draft exists for the test language and none for English. Extracting again without code changes stores nothing new. |
 | TC-L10N-02 | Translations | A draft with one translated message | Change the code (add one message, remove another) and extract again | The translation is kept, the new message is untranslated, the removed one is obsolete and hidden, and the previous draft file is deleted. |

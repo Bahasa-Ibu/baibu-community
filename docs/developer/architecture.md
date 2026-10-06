@@ -41,6 +41,7 @@ reached through LiteLLM, which the deployment chooses.
 | `baibu.notifications` | The in-app inbox, the unread count in the navigation and the `notify()` service other apps call. See [Notifications](notifications.md). |
 | `baibu.staff` | The staff area: review queues for submissions and reported chat replies, and processing errors. No models of its own. See [Staff review](staff.md). |
 | `baibu.localization` | Interface translations edited and published from the site: source string extraction, drafts, publishing with an audit trail, and loading published catalogues into running processes. See [Translations](translations.md). |
+| `baibu.metrics` | Count-only usage rollups (`DailyMetric`): the nightly task and `compute_metrics` command that compute them, and the staff usage page with its CSV export. See [Usage metrics](metrics.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 
 Sign-in, sign-up, email confirmation, password reset and two-factor
@@ -152,6 +153,13 @@ erDiagram
         string link "internal path"
         datetime read_at
     }
+    DailyMetric {
+        uuid id
+        date date "day, or cohort week"
+        string name "e.g. active_users"
+        string dimension "blank, or e.g. a language"
+        bigint value
+    }
     AccountDeletionRequest {
         uuid id
         string status
@@ -186,6 +194,9 @@ erDiagram
 
 Primary keys are UUIDv7, so they sort by creation time and do not reveal
 counts.
+
+`DailyMetric` stands alone: it holds aggregate integers per day, unique on
+date, name and dimension, with no link to users, messages or submissions.
 
 ### Phone numbers
 
@@ -251,6 +262,10 @@ the receipt number, source and time, never personal details.
   queues `execute_run` once the transcript is in; beat runs
   `baibu.chat.tasks.sweep_transcriptions` every minute to recover stuck
   transcriptions.
+- Every night (`METRICS_COMPUTE_HOUR`:`METRICS_COMPUTE_MINUTE`, platform
+  time), beat runs `baibu.metrics.tasks.compute_daily_metrics`, which stores
+  the previous day's usage counts (and any days missed while the worker was
+  down). `manage.py compute_metrics` recomputes a range of days.
 - Celery beat sends `baibu.core.tasks.heartbeat` every minute. The worker
   stores the time in the cache, and `/health/` reports the worker as `ok`,
   `stale` or `unknown`. `/health/` returns HTTP 503 only if the database or
@@ -284,5 +299,7 @@ never prefixed.
 | `/translations/<code>/history/` | Published versions and restore |
 | `/chat/voice/`, `/chat/<id>/voice/` | Voice message upload (only with `CHAT_STT_PROVIDER` set) |
 | `/chat/audio/<id>/` | Play back one's own recording |
+| `/staff/usage/` | Usage counts for staff with the *view daily metric* permission |
+| `/staff/usage/export.csv` | The same rollups as CSV |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |
 | `/health/` | Health check (JSON) |
