@@ -8,6 +8,7 @@ from .models import Message
 from .models import ModelVariant
 from .models import Prompt
 from .models import Run
+from .models import ToolInvocation
 
 
 class ReadOnlyInline(admin.TabularInline):
@@ -31,6 +32,12 @@ class MessageInline(ReadOnlyInline):
 class RunInline(ReadOnlyInline):
     model = Run
     fields = ("created_at", "status", "attempt", "model_name", "prompt_version", "latency_ms", "error")
+    readonly_fields = fields
+
+
+class ToolInvocationInline(ReadOnlyInline):
+    model = ToolInvocation
+    fields = ("created_at", "tool_name", "provider", "status", "arguments", "result_count", "error", "latency_ms")
     readonly_fields = fields
 
 
@@ -62,6 +69,7 @@ class RunAdmin(admin.ModelAdmin):
     list_filter = ("status", "model_name")
     date_hierarchy = "created_at"
     readonly_fields = [field.name for field in Run._meta.fields]
+    inlines = (ToolInvocationInline,)
 
     def has_add_permission(self, request):
         return False

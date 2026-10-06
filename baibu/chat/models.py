@@ -129,6 +129,8 @@ class Message(models.Model):
     idempotency_key = models.CharField(max_length=64, null=True, blank=True)  # noqa: DJ001
     # Set on assistant messages: the run that wrote it.
     run = models.OneToOneField("chat.Run", on_delete=models.SET_NULL, null=True, blank=True, related_name="reply")
+    # Set on assistant messages that used tools: [{"title", "url"}].
+    sources = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -179,6 +181,34 @@ class Run(models.Model):
 
     def __str__(self) -> str:
         return f"Run {self.pk} ({self.status})"
+
+
+class ToolInvocation(models.Model):
+    """One tool call made by the model during a run."""
+
+    class Status(models.TextChoices):
+        COMPLETED = "completed", _("Completed")
+        FAILED = "failed", _("Failed")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    run = models.ForeignKey(Run, on_delete=models.CASCADE, related_name="tool_invocations")
+    tool_name = models.CharField(max_length=64, db_index=True)
+    provider = models.CharField(max_length=64, blank=True)
+    call_id = models.CharField(max_length=255)
+    status = models.CharField(max_length=16, choices=Status.choices)
+    arguments = models.JSONField(default=dict, blank=True)
+    result_count = models.PositiveIntegerField(null=True, blank=True)
+    error = models.CharField(max_length=500, blank=True)
+    latency_ms = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        verbose_name = _("Tool invocation")
+        verbose_name_plural = _("Tool invocations")
+
+    def __str__(self) -> str:
+        return f"{self.tool_name} ({self.status})"
 
 
 class ConversationEvent(models.Model):

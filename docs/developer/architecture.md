@@ -87,6 +87,7 @@ erDiagram
     Conversation ||--o{ Run : "replies by"
     Message ||--o{ Run : triggers
     Conversation ||--o{ ConversationEvent : "audit trail"
+    Run ||--o{ ToolInvocation : calls
     Conversation {
         uuid id
         string title
@@ -106,6 +107,14 @@ erDiagram
         string model_name
         string prompt_version
         json error
+    }
+    ToolInvocation {
+        uuid id
+        string tool_name "internet_search"
+        string provider
+        string status "completed, failed"
+        json arguments
+        int result_count
     }
     AccountDeletionRequest {
         uuid id

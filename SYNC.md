@@ -16,7 +16,7 @@ production content, prompts and vendor integrations never come across.
 | --- | --- | --- | --- |
 | 2026-10-06 | production `main` as of 2026-10-05 | #7 skeleton | Account model, append-only consent records, account deletion requests, profile completion. Rewritten for the Community Edition. |
 | 2026-10-06 | production `main` as of 2026-10-05 | storage (#14), submissions (#13) | Text submission intake, raw and cleaned copies in private storage, statuses, duplicate refusal, deletion of stored files. Redesigned rather than ported: see the differences below. |
-| 2026-10-06 | production `main` as of 2026-10-05 | chat (#15) | Conversations, idempotent sends, runs on Celery, retries, prompt versions, model variants, audit trail. Redesigned rather than ported. |
+| 2026-10-06 | production `main` as of 2026-10-05 | chat (#15), search (#16) | Conversations, idempotent sends, runs on Celery, retries, prompt versions, model variants, audit trail; the `internet_search` tool with sources. Redesigned rather than ported. |
 
 ## Deliberate differences
 
@@ -35,5 +35,6 @@ production content, prompts and vendor integrations never come across.
 | Submission fields | Language as a code from settings; no tone or topic tags; the database keeps an excerpt of the cleaned text only | Simpler, and less personal data in the database. |
 | Submission review | Django admin actions with enforced status transitions until the review queue (#17) | Smallest useful review tool. |
 | Chat | Web chat only; replies through LiteLLM with a local `mock` model by default; API keys referenced by environment variable name; versioned prompts edited in the admin; one active reply per conversation; a sweeper instead of execution leases | Vendor-neutral and simpler to operate. |
+| Web search | A `SearchProvider` interface with a mock; no provider bundled | No commercial search service in the code. |
 | Migrations | Fresh history starting at `0001` | Upstream migrations are regenerated, not copied. |
 | Layout | Django project at the repository root (upstream: `web-app/`) | Map `web-app/<path>` to `<path>`. |
