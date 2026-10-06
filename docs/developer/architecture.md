@@ -38,6 +38,7 @@ reached through LiteLLM, which the deployment chooses.
 | `baibu.users` | The user model (email sign-in, optional phone sign-in, one `name` field), profile completion, consent history, account deletion requests, the messaging provider interface for text messages, and the admin. |
 | `baibu.submissions` | Text contributions: the submission form and list, the cleaning task and pluggable cleaners, and the admin used for review. See [Submissions and cleaning](submissions.md). |
 | `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants and the audit trail; the Celery tasks that produce replies. See [Assistant chat](chat.md). |
+| `baibu.notifications` | The in-app inbox, the unread count in the navigation and the `notify()` service other apps call. See [Notifications](notifications.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 
 Sign-in, sign-up, email confirmation, password reset and two-factor
@@ -119,6 +120,14 @@ erDiagram
         string status "completed, failed"
         json arguments
         int result_count
+    }
+    User ||--o{ Notification : receives
+    Notification {
+        uuid id
+        string kind "translated when shown"
+        json params
+        string link "internal path"
+        datetime read_at
     }
     AccountDeletionRequest {
         uuid id
@@ -203,6 +212,7 @@ never prefixed.
 | `/contribute/` | The user's submissions |
 | `/contribute/new/` | Submit text |
 | `/chat/` | Conversations and a new chat |
+| `/notifications/` | The user's notifications |
 | `/chat/consent/` | Chat consent choice |
 | `/chat/<id>/` | One conversation |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |

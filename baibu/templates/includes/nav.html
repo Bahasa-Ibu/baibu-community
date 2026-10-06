@@ -9,6 +9,9 @@
       {% if user.is_authenticated %}
         {% if platform.chat_enabled %}<a href="{% url 'chat:home' %}">{% translate "Chat" %}</a>{% endif %}
         <a href="{% url 'submissions:list' %}">{% translate "Contribute" %}</a>
+        <a href="{% url 'notifications:inbox' %}" class="relative" aria-label="{% blocktranslate count n=unread_notifications|default:0 %}Notifications, {{ n }} unread{% plural %}Notifications, {{ n }} unread{% endblocktranslate %}">
+          {% translate "Notifications" %}{% if unread_notifications %} <span class="rounded-full bg-brand px-2 py-0.5 text-xs font-semibold text-white">{{ unread_notifications }}</span>{% endif %}
+        </a>
         <a href="{% url 'users:account' %}">{% translate "Account" %}</a>
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">{% translate "Admin" %}</a>{% endif %}
         <form method="post" action="{% url 'account_logout' %}" class="m-0">

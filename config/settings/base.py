@@ -93,6 +93,7 @@ LOCAL_APPS = [
     "baibu.users",
     "baibu.submissions",
     "baibu.chat",
+    "baibu.notifications",
     "baibu.theme",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -192,6 +193,7 @@ TEMPLATES = [
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
                 "baibu.core.context_processors.platform",
+                "baibu.notifications.context_processors.notifications",
             ],
         },
     },
@@ -277,6 +279,10 @@ CELERY_BEAT_SCHEDULE = {
 CELERY_BEAT_SCHEDULE["chat-sweep-runs"] = {
     "task": "baibu.chat.tasks.sweep_runs",
     "schedule": env.int("CHAT_SWEEP_SECONDS", default=60),
+}
+CELERY_BEAT_SCHEDULE["delete-old-notifications"] = {
+    "task": "baibu.notifications.tasks.delete_old_notifications",
+    "schedule": 24 * 60 * 60,
 }
 # The health endpoint reports the worker as stale after this many seconds
 # without a heartbeat.
@@ -373,3 +379,9 @@ CHAT_SEARCH_PROVIDER = env("CHAT_SEARCH_PROVIDER", default="")
 CHAT_SEARCH_MAX_RESULTS = env.int("CHAT_SEARCH_MAX_RESULTS", default=5)
 # Rounds of tool calls the model may make before it must answer.
 CHAT_MAX_TOOL_ROUNDS = env.int("CHAT_MAX_TOOL_ROUNDS", default=2)
+
+# NOTIFICATIONS
+# ------------------------------------------------------------------------------
+NOTIFICATIONS_ENABLED = env.bool("NOTIFICATIONS_ENABLED", default=True)
+# Read notifications older than this are deleted daily.
+NOTIFICATIONS_RETENTION_DAYS = env.int("NOTIFICATIONS_RETENTION_DAYS", default=180)

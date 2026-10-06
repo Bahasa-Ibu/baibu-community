@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Notifications" %}{% endblock title %}
+{% block content %}
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h1>{% translate "Notifications" %}</h1>
+    {% if unread_notifications %}
+      <form method="post" action="{% url 'notifications:mark_all_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary">{% translate "Mark all as read" %}</button>
+      </form>
+    {% endif %}
+  </div>
+  {% if page.object_list %}
+    <ul class="space-y-3">
+      {% for notification in page.object_list %}
+        <li class="card {% if not notification.is_read %}border-brand{% endif %}">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="font-semibold">
+                {% if not notification.is_read %}<span class="sr-only">{% translate "Unread:" %}</span>{% endif %}
+                {{ notification.display_title }}
+              </p>
+              {% with body=notification.display_body %}{% if body %}<p class="mt-1 whitespace-pre-line text-stone-700">{{ body }}</p>{% endif %}{% endwith %}
+              <p class="mt-2 text-sm text-stone-500">{{ notification.created_at|date:"DATETIME_FORMAT" }}</p>
+            </div>
+            {% if notification.link or not notification.is_read %}
+              <form method="post" action="{% url 'notifications:open' notification.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary text-sm">
+                  {% if notification.link %}{% translate "Open" %}{% else %}{% translate "Mark as read" %}{% endif %}
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+    {% if page.has_other_pages %}
+      <nav class="mt-6 flex justify-between text-sm" aria-label="{% translate 'Pages' %}">
+        {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">{% translate "Newer" %}</a>{% else %}<span></span>{% endif %}
+        {% if page.has_next %}<a href="?page={{ page.next_page_number }}">{% translate "Older" %}</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="card text-stone-700">{% translate "You have no notifications." %}</div>
+  {% endif %}
+{% endblock content %}

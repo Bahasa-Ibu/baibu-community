@@ -8,6 +8,7 @@ from baibu.core import storage
 
 from .models import Submission
 from .services import requeue
+from .services import review
 
 
 def _stored_text(key: str) -> str:
@@ -18,12 +19,7 @@ def _stored_text(key: str) -> str:
 
 
 def _move(modeladmin, request, queryset, status):
-    moved = 0
-    for submission in queryset:
-        if submission.can_transition_to(status):
-            submission.status = status
-            submission.save(update_fields=["status", "updated_at"])
-            moved += 1
+    moved = sum(review(submission, status, reviewer=request.user) for submission in queryset)
     skipped = queryset.count() - moved
     modeladmin.message_user(
         request, ngettext("%(n)d submission updated.", "%(n)d submissions updated.", moved) % {"n": moved}
@@ -50,6 +46,7 @@ class SubmissionAdmin(admin.ModelAdmin):
     actions = ("mark_verified", "mark_rejected", "clean_again")
     fieldsets = (
         (None, {"fields": ("id", "user", "language_code", "status", "decision_reason", "staff_notes")}),
+        (_("Review"), {"fields": ("reviewed_by", "reviewed_at")}),
         (_("Text"), {"fields": ("cleaned_text", "raw_text", "word_count", "character_count")}),
         (
             _("Cleaning"),

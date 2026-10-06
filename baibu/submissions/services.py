@@ -161,6 +161,29 @@ def requeue(submission: Submission) -> bool:
     return True
 
 
+def review(submission: Submission, status: str, *, reviewer=None) -> bool:
+    """Record a staff decision on a submission and tell the contributor.
+
+    Returns ``False`` if the change is not allowed from the current status.
+    """
+    from django.urls import reverse
+
+    from baibu.notifications.services import notify
+
+    kinds = {Submission.Status.VERIFIED: "submission_accepted", Submission.Status.REJECTED: "submission_rejected"}
+    if status not in kinds:
+        msg = f"Not a review decision: {status}"
+        raise ValueError(msg)
+    if not submission.can_transition_to(status):
+        return False
+    submission.status = status
+    submission.reviewed_by = reviewer
+    submission.reviewed_at = timezone.now()
+    submission.save(update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"])
+    notify(submission.user, kind=kinds[status], link=reverse("submissions:list"))
+    return True
+
+
 def delete_files(submission: Submission) -> None:
     for key in (submission.raw_key, submission.clean_key):
         if key:
