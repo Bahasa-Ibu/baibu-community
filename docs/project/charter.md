@@ -1,0 +1,1 @@
+--8<-- "PROJECT_CHARTER.md"

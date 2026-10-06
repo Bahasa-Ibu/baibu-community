@@ -1,0 +1,67 @@
+site_name: Baibu Community Edition
+site_description: >-
+  Open-source, self-hostable, white-label platform for collecting community
+  language contributions and running an assistant chat in local languages.
+site_url: https://bahasa-ibu.github.io/baibu-community/
+repo_url: https://github.com/Bahasa-Ibu/baibu-community
+repo_name: Bahasa-Ibu/baibu-community
+edit_uri: edit/main/docs/
+copyright: Copyright 2026 PT Ibu Punya Mimpi. Licensed under the Apache License 2.0.
+
+theme:
+  name: material
+  features:
+    - content.action.edit
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Developer:
+      - developer/index.md
+  - Quality assurance:
+      - Test plan: qa/test-plan.md
+      - Coverage report: https://bahasa-ibu.github.io/baibu-community/coverage/
+  - Community:
+      - community/index.md
+      - Code of conduct: community/code-of-conduct.md
+      - Contributing: community/contributing.md
+      - Security policy: community/security.md
+      - Handling conduct reports: community/conduct-reporting.md
+  - Project:
+      - Charter: project/charter.md
+      - Roadmap: project/roadmap.md
+      - Open-source compliance: project/compliance.md

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Bahasa-Ibu/baibu-community/blob/main/SECURITY.md
+    about: Do not open a public issue. Email contact@baibu.id as described in SECURITY.md.
+  - name: Report a code of conduct concern
+    url: https://github.com/Bahasa-Ibu/baibu-community/blob/main/CODE_OF_CONDUCT.md
+    about: Email contact@baibu.id. Reports are handled privately.
+  - name: Documentation
+    url: https://bahasa-ibu.github.io/baibu-community/
+    about: Setup, test plan, roadmap and community documents.
