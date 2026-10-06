@@ -25,6 +25,10 @@ KINDS: dict[str, Kind] = {
         title=_("Your contribution was not accepted"),
         body=_("A reviewer checked your writing and could not accept it this time."),
     ),
+    "chat_report_reviewed": Kind(
+        title=_("Your report was reviewed"),
+        body=_("Thank you for reporting a reply. Someone on our team has looked at it."),
+    ),
 }
 
 

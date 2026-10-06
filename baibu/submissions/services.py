@@ -153,10 +153,12 @@ def requeue(submission: Submission) -> bool:
     """Send a submission back for cleaning ("clean again")."""
     from .tasks import clean_submission
 
-    if not submission.can_transition_to(Submission.Status.PENDING):
-        return False
-    submission.status = Submission.Status.PENDING
-    submission.save(update_fields=["status", "updated_at"])
+    with transaction.atomic():
+        locked = Submission.objects.select_for_update().get(pk=submission.pk)
+        if not locked.can_transition_to(Submission.Status.PENDING):
+            return False
+        submission.status = Submission.Status.PENDING
+        submission.save(update_fields=["status", "updated_at"])
     transaction.on_commit(lambda: clean_submission.delay(str(submission.pk)))
     return True
 
@@ -174,12 +176,16 @@ def review(submission: Submission, status: str, *, reviewer=None) -> bool:
     if status not in kinds:
         msg = f"Not a review decision: {status}"
         raise ValueError(msg)
-    if not submission.can_transition_to(status):
-        return False
-    submission.status = status
-    submission.reviewed_by = reviewer
-    submission.reviewed_at = timezone.now()
-    submission.save(update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"])
+    with transaction.atomic():
+        # Lock the row so two reviewers cannot both decide.
+        locked = Submission.objects.select_for_update().get(pk=submission.pk)
+        if not locked.can_transition_to(status):
+            submission.status = locked.status
+            return False
+        submission.status = status
+        submission.reviewed_by = reviewer
+        submission.reviewed_at = timezone.now()
+        submission.save(update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"])
     notify(submission.user, kind=kinds[status], link=reverse("submissions:list"))
     return True
 

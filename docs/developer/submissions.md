@@ -97,7 +97,6 @@ When staff accept (`verified`) or reject a submission, the contributor
 gets a [notification](notifications.md), and the reviewer and time are
 recorded.
 
-Staff use the Django admin for now: filter by status, read the submitted and
-cleaned text side by side, add notes, and use the actions *Mark as
-verified*, *Mark as rejected* and *Clean again*. A dedicated review queue is
-planned (#17).
+Staff review submissions in the [staff area](staff.md). The Django admin
+offers the same decisions as bulk actions (*Mark as verified*, *Mark as
+rejected*, *Clean again*).

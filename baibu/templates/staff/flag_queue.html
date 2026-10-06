@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Reported replies" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Reported replies" %}</h1>
+  {% include "staff/_nav.html" %}
+  {% if page.object_list %}
+    <ul class="space-y-3">
+      {% for flag in page.object_list %}
+        <li class="card">
+          <a href="{% url 'staff:flag' flag.pk %}" class="font-semibold">{{ flag.get_reason_display }}</a>
+          <span class="text-sm text-stone-500"> · {{ flag.created_at|date:"DATETIME_FORMAT" }}</span>
+          <p class="mt-1 line-clamp-2 text-stone-700">{{ flag.message.content|truncatechars:200 }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+    {% include "staff/_pages.html" %}
+  {% else %}
+    <div class="card text-stone-700">{% translate "No open reports." %}</div>
+  {% endif %}
+{% endblock content %}

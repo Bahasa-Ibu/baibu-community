@@ -63,6 +63,13 @@ The page works without JavaScript (forms post and the page reloads). With
 JavaScript, `static/js/chat.js` sends in the background and polls for the
 reply.
 
+## Reports
+
+Under each assistant reply, *Report* lets the user say what is wrong
+(harmful, wrong or misleading, something else) with an optional note.
+Reports go to the staff queue described in [Staff review](staff.md); each
+user can report a reply once.
+
 ## Models
 
 Staff manage **model variants** in the admin (*Chat → Model variants*).

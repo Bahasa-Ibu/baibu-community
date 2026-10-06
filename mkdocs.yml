@@ -62,6 +62,7 @@ nav:
       - Submissions and cleaning: developer/submissions.md
       - Assistant chat: developer/chat.md
       - Notifications: developer/notifications.md
+      - Staff review: developer/staff.md
       - Phone sign-in: developer/phone-sign-in.md
       - White-label deployments: developer/white-label.md
   - Quality assurance:

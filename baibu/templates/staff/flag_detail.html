@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Reported reply" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Reported reply" %}</h1>
+  {% include "staff/_nav.html" %}
+  <dl class="card mb-6 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+    <div><dt class="text-stone-500">{% translate "Reason" %}</dt><dd>{{ flag.get_reason_display }}</dd></div>
+    <div><dt class="text-stone-500">{% translate "Reported" %}</dt><dd>{{ flag.created_at|date:"DATETIME_FORMAT" }}</dd></div>
+    <div><dt class="text-stone-500">{% translate "Status" %}</dt><dd>{{ flag.get_status_display }}</dd></div>
+    {% if flag.note %}<div class="sm:col-span-3"><dt class="text-stone-500">{% translate "Note from the user" %}</dt><dd class="whitespace-pre-line">{{ flag.note }}</dd></div>{% endif %}
+    {% if flag.decided_by %}<div class="sm:col-span-3"><dt class="text-stone-500">{% translate "Decided" %}</dt><dd>{{ flag.decided_by }} · {{ flag.decided_at|date:"DATETIME_FORMAT" }}{% if flag.decision_note %} · {{ flag.decision_note }}{% endif %}</dd></div>{% endif %}
+  </dl>
+  <h2 class="mb-2 text-base">{% translate "Conversation" %}</h2>
+  <div class="mb-6 space-y-3">
+    {% for message in transcript %}
+      <div class="rounded-xl border px-4 py-3 {% if message.pk == flag.message_id %}border-red-300 bg-red-50{% else %}border-stone-200 bg-white{% endif %}">
+        <p class="mb-1 text-xs font-semibold uppercase text-stone-500">{{ message.get_role_display }}{% if message.pk == flag.message_id %} · {% translate "reported" %}{% endif %}</p>
+        <p class="whitespace-pre-line">{{ message.content }}</p>
+      </div>
+    {% endfor %}
+  </div>
+  {% if flag.status == "open" %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      {% if form.decision.errors %}<div class="errorlist">{{ form.decision.errors }}</div>{% endif %}
+      <fieldset class="mb-4 flex flex-wrap gap-3">
+        <legend class="mb-2 font-semibold">{{ form.decision.label }}</legend>
+        {% for radio in form.decision %}
+          <label class="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 font-normal">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+        {% endfor %}
+      </fieldset>
+      {{ form.note.as_field_group }}
+      <button type="submit" class="btn-primary">{% translate "Save and next" %}</button>
+    </form>
+  {% endif %}
+{% endblock content %}

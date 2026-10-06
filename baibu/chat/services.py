@@ -329,3 +329,53 @@ def sweep_runs(now=None) -> dict:
 
 def new_idempotency_key() -> str:
     return uuid.uuid4().hex
+
+
+# --- Reports ----------------------------------------------------------------
+
+
+def report_message(*, message: Message, user, reason: str, note: str = ""):
+    """Flag an assistant reply for staff. Reporting the same reply twice is a no-op."""
+    from .models import ChatFlag
+
+    if message.role != Message.Role.ASSISTANT or message.conversation.user_id != user.pk:
+        msg = "Only replies in your own conversations can be reported."
+        raise ChatError(msg)
+    flag, created = ChatFlag.objects.get_or_create(
+        message=message,
+        reported_by=user,
+        defaults={"conversation": message.conversation, "reason": reason, "note": note.strip()[:500]},
+    )
+    if created:
+        record_event(conversation=message.conversation, type="reply_reported", message=message, reason=reason)
+    return flag
+
+
+def decide_flag(flag, status: str, *, reviewer, note: str = "") -> bool:
+    """Record the one staff decision on a report. Returns False if already decided."""
+    from django.urls import reverse
+
+    from baibu.notifications.services import notify
+
+    from .models import ChatFlag
+
+    if status not in {ChatFlag.Status.CONFIRMED, ChatFlag.Status.DISMISSED}:
+        msg = f"Not a decision: {status}"
+        raise ValueError(msg)
+    with transaction.atomic():
+        locked = ChatFlag.objects.select_for_update().get(pk=flag.pk)
+        if locked.status != ChatFlag.Status.OPEN:
+            return False
+        locked.status = status
+        locked.decided_by = reviewer
+        locked.decided_at = timezone.now()
+        locked.decision_note = note.strip()
+        locked.save()
+        record_event(conversation=locked.conversation, type=f"report_{status}", message=locked.message)
+    notify(
+        locked.reported_by,
+        kind="chat_report_reviewed",
+        link=reverse("chat:conversation", args=[locked.conversation_id]),
+    )
+    flag.refresh_from_db()
+    return True

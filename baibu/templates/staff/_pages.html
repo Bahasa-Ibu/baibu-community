@@ -1,0 +1,7 @@
+{% load i18n %}
+{% if page.has_other_pages %}
+  <nav class="mt-6 flex justify-between text-sm" aria-label="{% translate 'Pages' %}">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if status %}&status={{ status }}{% endif %}">{% translate "Previous" %}</a>{% else %}<span></span>{% endif %}
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if status %}&status={{ status }}{% endif %}">{% translate "Next" %}</a>{% endif %}
+  </nav>
+{% endif %}

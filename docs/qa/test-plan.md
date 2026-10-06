@@ -184,6 +184,17 @@ translations.
 - A staff decision (accept or reject) records the reviewer and time and
   notifies the contributor once; a refused transition notifies nobody.
 
+**ChatFlag and staff review.** A user's report of an assistant reply, and
+the staff queues.
+
+- Users can report only assistant replies in their own conversations, once
+  per reply.
+- Each queued item (submission or report) gets one decision; a second
+  decision on the same item is refused and changes nothing.
+- Only decisions allowed from the item's status are offered.
+- Staff screens are for staff only: signed-out users are sent to sign in,
+  other users get 403.
+
 **Notification.** A message in a user's inbox.
 
 - Users see only their own notifications. Opening one marks it read and
@@ -240,6 +251,8 @@ feature lands.
 | TC-STO-01 | File storage | Each backend in turn: in-memory, a temporary directory, an S3-compatible server | Save a JSON payload with non-Latin text under a key, read it back, save again under the same key, delete it | The payload reads back unchanged. The second save returns a different key and the first file is untouched. After deletion the key reads as missing. Private files on the filesystem have no URL. |
 | TC-SUB-01 | Submission cleaning | User with `eval_only` consent | Submit text containing extra whitespace, control characters and a synthetic email address | Cleaned text has normalised whitespace, no control characters and the email address redacted. Raw text is stored separately. Status is `verified`, or `needs_review` if the cleaner flags it. The submission records consent tier `eval_only`. |
 | TC-SUB-02 | Submission cleaning | Storage set to fail on write | Submit text | Status is `issue`. The error is logged. No partial cleaned file is left in storage. |
+| TC-REV-01 | Staff review | Two submissions in `needs_review`; a signed-in staff member | Open the first, choose *Accept*, save | The first is `verified`, with the reviewer and time recorded; the contributor has one notification; the second submission opens next. |
+| TC-REV-02 | Staff review | A report of an assistant reply; two staff members open it | Both choose a decision and save | The first decision is kept. The second reviewer is told it was already decided. The reporter has one notification. |
 | TC-CHT-01 | Chat run retry | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
 | TC-CHT-02 | Chat run retry | Mocked model always raises an error | Send a message and retry up to the configured limit | Each attempt creates a Run. After the limit, no further retries are allowed and the user sees an error message. No assistant message is created. |
 

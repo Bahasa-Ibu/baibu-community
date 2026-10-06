@@ -39,6 +39,7 @@ reached through LiteLLM, which the deployment chooses.
 | `baibu.submissions` | Text contributions: the submission form and list, the cleaning task and pluggable cleaners, and the admin used for review. See [Submissions and cleaning](submissions.md). |
 | `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants and the audit trail; the Celery tasks that produce replies. See [Assistant chat](chat.md). |
 | `baibu.notifications` | The in-app inbox, the unread count in the navigation and the `notify()` service other apps call. See [Notifications](notifications.md). |
+| `baibu.staff` | The staff area: review queues for submissions and reported chat replies, and processing errors. No models of its own. See [Staff review](staff.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 
 Sign-in, sign-up, email confirmation, password reset and two-factor
@@ -93,6 +94,7 @@ erDiagram
     Message ||--o{ Run : triggers
     Conversation ||--o{ ConversationEvent : "audit trail"
     Run ||--o{ ToolInvocation : calls
+    Message ||--o{ ChatFlag : "reported in"
     Conversation {
         uuid id
         string title
@@ -112,6 +114,12 @@ erDiagram
         string model_name
         string prompt_version
         json error
+    }
+    ChatFlag {
+        uuid id
+        string reason "harmful, incorrect, other"
+        string status "open, confirmed, dismissed"
+        datetime decided_at
     }
     ToolInvocation {
         uuid id
@@ -213,6 +221,8 @@ never prefixed.
 | `/contribute/new/` | Submit text |
 | `/chat/` | Conversations and a new chat |
 | `/notifications/` | The user's notifications |
+| `/chat/replies/<id>/report/` | Report an assistant reply |
+| `/staff/` | Staff overview, review queues (`review/submissions/`, `review/chats/`) and `errors/` |
 | `/chat/consent/` | Chat consent choice |
 | `/chat/<id>/` | One conversation |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |

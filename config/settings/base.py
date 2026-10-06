@@ -94,6 +94,7 @@ LOCAL_APPS = [
     "baibu.submissions",
     "baibu.chat",
     "baibu.notifications",
+    "baibu.staff",
     "baibu.theme",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

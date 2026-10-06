@@ -16,3 +16,19 @@ class MessageForm(forms.Form):
         self.fields["content"].max_length = settings.CHAT_MAX_MESSAGE_CHARACTERS
         self.fields["content"].validators.append(MaxLengthValidator(settings.CHAT_MAX_MESSAGE_CHARACTERS))
         self.fields["content"].widget.attrs["maxlength"] = settings.CHAT_MAX_MESSAGE_CHARACTERS
+
+
+class ReportForm(forms.Form):
+    reason = forms.ChoiceField(label=_("What is wrong with this reply?"), widget=forms.RadioSelect)
+    note = forms.CharField(
+        label=_("Anything else we should know? (optional)"),
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        from .models import ChatFlag
+
+        super().__init__(*args, **kwargs)
+        self.fields["reason"].choices = ChatFlag.Reason.choices

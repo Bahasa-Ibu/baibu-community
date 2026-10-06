@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Submissions to review" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Submissions to review" %}</h1>
+  {% include "staff/_nav.html" %}
+  <form method="get" class="mb-4 flex items-center gap-2 text-sm">
+    <label for="status-filter">{% translate "Show" %}</label>
+    <select id="status-filter" name="status" onchange="this.form.submit()" class="w-auto">
+      <option value="">{% translate "All" %}</option>
+      <option value="needs_review" {% if status == "needs_review" %}selected{% endif %}>{% translate "Needs review" %}</option>
+      <option value="issue" {% if status == "issue" %}selected{% endif %}>{% translate "Issue" %}</option>
+    </select>
+    <noscript><button type="submit" class="btn-secondary">{% translate "Filter" %}</button></noscript>
+  </form>
+  {% if page.object_list %}
+    <table class="w-full text-left text-sm">
+      <thead class="text-stone-500"><tr><th class="py-2">{% translate "Received" %}</th><th>{% translate "Language" %}</th><th>{% translate "Status" %}</th><th>{% translate "Reason" %}</th></tr></thead>
+      <tbody class="divide-y divide-stone-200">
+        {% for submission in page.object_list %}
+          <tr>
+            <td class="py-2"><a href="{% url 'staff:submission' submission.pk %}{% if status %}?status={{ status }}{% endif %}">{{ submission.created_at|date:"DATETIME_FORMAT" }}</a></td>
+            <td>{{ submission.language_code }}</td>
+            <td><span class="status status-{{ submission.status }}">{{ submission.get_status_display }}</span></td>
+            <td class="text-stone-700">{{ submission.decision_reason }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "staff/_pages.html" %}
+  {% else %}
+    <div class="card text-stone-700">{% translate "Nothing to review." %}</div>
+  {% endif %}
+{% endblock content %}
