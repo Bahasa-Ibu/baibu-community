@@ -90,6 +90,7 @@ LOCAL_APPS = [
     "baibu.core",
     "baibu.users",
     "baibu.submissions",
+    "baibu.chat",
     "baibu.theme",
 ]
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -271,6 +272,10 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": env.int("WORKER_HEARTBEAT_SECONDS", default=60),
     },
 }
+CELERY_BEAT_SCHEDULE["chat-sweep-runs"] = {
+    "task": "baibu.chat.tasks.sweep_runs",
+    "schedule": env.int("CHAT_SWEEP_SECONDS", default=60),
+}
 # The health endpoint reports the worker as stale after this many seconds
 # without a heartbeat.
 WORKER_HEARTBEAT_STALE_SECONDS = env.int("WORKER_HEARTBEAT_STALE_SECONDS", default=300)
@@ -329,3 +334,20 @@ SUBMISSION_CLEANER_API_KEY = env("SUBMISSION_CLEANER_API_KEY", default="")
 SUBMISSION_CLEANER_TIMEOUT = env.int("SUBMISSION_CLEANER_TIMEOUT", default=60)
 # Texts a cleaner scores below this (0-100) go to staff review.
 SUBMISSION_MIN_QUALITY = env.int("SUBMISSION_MIN_QUALITY", default=50)
+
+# CHAT
+# ------------------------------------------------------------------------------
+CHAT_ENABLED = env.bool("CHAT_ENABLED", default=True)
+# Consent scope for conversations. Users choose a tier once before chatting.
+CHAT_CONSENT_SCOPE = env("CHAT_CONSENT_SCOPE", default="chat")
+# Model used when no model variant is marked as default in the admin. "mock"
+# answers locally without any model; any LiteLLM model name works.
+CHAT_MODEL = env("CHAT_MODEL", default="mock")
+CHAT_MODEL_TIMEOUT = env.int("CHAT_MODEL_TIMEOUT", default=60)
+# Earlier messages sent to the model with each new one.
+CHAT_CONTEXT_MESSAGES = env.int("CHAT_CONTEXT_MESSAGES", default=20)
+CHAT_MAX_MESSAGE_CHARACTERS = env.int("CHAT_MAX_MESSAGE_CHARACTERS", default=4000)
+# Attempts at a reply to one message, including retries.
+CHAT_MAX_ATTEMPTS = env.int("CHAT_MAX_ATTEMPTS", default=3)
+# A reply still running after this long is failed so the user can retry.
+CHAT_RUN_TIMEOUT_SECONDS = env.int("CHAT_RUN_TIMEOUT_SECONDS", default=180)

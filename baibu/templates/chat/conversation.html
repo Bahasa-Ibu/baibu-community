@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{{ conversation.title|default:_("Chat") }}{% endblock title %}
+{% block main %}
+  <main class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:flex-row">
+    {% include "chat/_sidebar.html" %}
+    <section class="flex flex-1 flex-col">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <h1 class="truncate text-xl">{{ conversation.title|default:_("New conversation") }}</h1>
+        <form method="post" action="{% url 'chat:delete' conversation.pk %}"
+              onsubmit="return confirm('{% translate "Delete this conversation? This cannot be undone." as question %}{{ question|escapejs }}');">
+          {% csrf_token %}
+          <button type="submit" class="btn-secondary">{% translate "Delete" %}</button>
+        </form>
+      </div>
+      {% include "chat/_messages.html" %}
+      {% url 'chat:send' conversation.pk as action %}
+      {% include "chat/_composer.html" with action=action %}
+    </section>
+  </main>
+{% endblock main %}
+{% block extra_body %}<script src="{% static 'js/chat.js' %}" defer></script>{% endblock extra_body %}

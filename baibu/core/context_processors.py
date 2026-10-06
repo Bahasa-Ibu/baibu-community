@@ -17,5 +17,6 @@ def platform(request):
             "brand_color": brand_color if _SAFE_COLOR.match(brand_color) else "",
             "languages": settings.LANGUAGES,
             "allow_registration": settings.ACCOUNT_ALLOW_REGISTRATION,
+            "chat_enabled": settings.CHAT_ENABLED,
         },
     }

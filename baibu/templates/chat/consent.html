@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Chat" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-2">{% translate "Before you chat" %}</h1>
+  <p class="mb-6 text-stone-700">
+    {% translate "Your conversations are stored so you can come back to them. Choose whether they may also be used to test or improve language tools. You can change this at any time." %}
+    <a href="{% url 'privacy' %}">{% translate "Read the privacy notice" %}</a>
+  </p>
+  <form method="post" class="card">
+    {% csrf_token %}
+    {% if form.tier.errors %}<div class="errorlist">{{ form.tier.errors }}</div>{% endif %}
+    <fieldset class="space-y-3">
+      <legend class="mb-2 font-semibold">{{ form.tier.label }}</legend>
+      {% for radio in form.tier %}
+        <label class="flex items-start gap-3 rounded-lg border border-stone-200 p-3 font-normal">
+          {{ radio.tag }}
+          <span>{{ radio.choice_label }}</span>
+        </label>
+      {% endfor %}
+    </fieldset>
+    <button type="submit" class="btn-primary mt-4">{% translate "Save and continue" %}</button>
+  </form>
+{% endblock content %}

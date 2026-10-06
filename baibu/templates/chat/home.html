@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% translate "Chat" %}{% endblock title %}
+{% block main %}
+  <main class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:flex-row">
+    {% include "chat/_sidebar.html" %}
+    <section class="flex-1">
+      <h1 class="mb-2">{% translate "Start a conversation" %}</h1>
+      <p class="text-stone-700">{% translate "Ask a question or just say hello, in your own language." %}</p>
+      {% if form.errors %}<div class="errorlist mt-4">{{ form.content.errors }}</div>{% endif %}
+      {% url 'chat:new' as action %}
+      {% include "chat/_composer.html" with action=action %}
+    </section>
+  </main>
+{% endblock main %}

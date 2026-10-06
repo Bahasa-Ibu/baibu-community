@@ -37,6 +37,7 @@ reached through LiteLLM, which the deployment chooses.
 | `baibu.core` | Platform settings exposed to templates (`platform` context), language configuration, the file storage interface, the `/health/` endpoint, the worker heartbeat task, and keeping the Site record in line with the platform name and domain. |
 | `baibu.users` | The user model (email sign-in, one `name` field), profile completion, consent history, account deletion requests, and the admin for all three. |
 | `baibu.submissions` | Text contributions: the submission form and list, the cleaning task and pluggable cleaners, and the admin used for review. See [Submissions and cleaning](submissions.md). |
+| `baibu.chat` | The assistant chat: conversations, messages, runs, prompt versions, model variants and the audit trail; the Celery tasks that produce replies. See [Assistant chat](chat.md). |
 | `baibu.theme` | The Tailwind source. The built stylesheet is not committed. |
 
 Sign-in, sign-up, email confirmation, password reset and two-factor
@@ -80,6 +81,31 @@ erDiagram
         string cleaner
         bool toxicity_detected
         int quality_score
+    }
+    User ||--o{ Conversation : has
+    Conversation ||--o{ Message : contains
+    Conversation ||--o{ Run : "replies by"
+    Message ||--o{ Run : triggers
+    Conversation ||--o{ ConversationEvent : "audit trail"
+    Conversation {
+        uuid id
+        string title
+        string consent_tier "chat scope, at start"
+        datetime last_activity_at
+    }
+    Message {
+        uuid id
+        string role "user, assistant"
+        text content
+        string idempotency_key
+    }
+    Run {
+        uuid id
+        string status "queued, running, completed, failed"
+        int attempt
+        string model_name
+        string prompt_version
+        json error
     }
     AccountDeletionRequest {
         uuid id
@@ -131,6 +157,8 @@ the receipt number, source and time, never personal details.
   profile; sign-in pages, terms, privacy and the admin for staff are exempt).
 - Creating a submission queues `baibu.submissions.tasks.clean_submission`
   once the database transaction commits.
+- Sending a chat message queues `baibu.chat.tasks.execute_run`; beat runs
+  `baibu.chat.tasks.sweep_runs` every minute to recover stuck replies.
 - Celery beat sends `baibu.core.tasks.heartbeat` every minute. The worker
   stores the time in the cache, and `/health/` reports the worker as `ok`,
   `stale` or `unknown`. `/health/` returns HTTP 503 only if the database or
@@ -152,5 +180,8 @@ never prefixed.
 | `/users/account/delete/` | Account deletion request |
 | `/contribute/` | The user's submissions |
 | `/contribute/new/` | Submit text |
+| `/chat/` | Conversations and a new chat |
+| `/chat/consent/` | Chat consent choice |
+| `/chat/<id>/` | One conversation |
 | `/admin/` | Django admin (path set by `DJANGO_ADMIN_URL`) |
 | `/health/` | Health check (JSON) |

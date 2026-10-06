@@ -1,0 +1,8 @@
+{% load i18n %}
+<form method="post" action="{{ action }}" class="chat-composer mt-4 flex items-end gap-2" data-chat-composer>
+  {% csrf_token %}
+  {{ form.idempotency_key }}
+  <label for="{{ form.content.id_for_label }}" class="sr-only">{{ form.content.label }}</label>
+  <div class="flex-1">{{ form.content }}</div>
+  <button type="submit" class="btn-primary">{% translate "Send" %}</button>
+</form>

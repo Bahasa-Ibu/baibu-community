@@ -7,6 +7,7 @@
     </a>
     <div class="flex items-center gap-3 text-sm">
       {% if user.is_authenticated %}
+        {% if platform.chat_enabled %}<a href="{% url 'chat:home' %}">{% translate "Chat" %}</a>{% endif %}
         <a href="{% url 'submissions:list' %}">{% translate "Contribute" %}</a>
         <a href="{% url 'users:account' %}">{% translate "Account" %}</a>
         {% if user.is_staff %}<a href="{% url 'admin:index' %}">{% translate "Admin" %}</a>{% endif %}
