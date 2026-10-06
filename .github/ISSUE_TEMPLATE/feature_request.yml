@@ -1,0 +1,56 @@
+name: Feature request
+description: Suggest a new feature or an improvement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Check the roadmap first:
+        https://bahasa-ibu.github.io/baibu-community/project/roadmap/
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this solve, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Accounts, consent or deletion requests
+        - Submissions
+        - Chat
+        - Staff tools
+        - Localization
+        - Infrastructure, Docker or CI
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: |
+        Anything else that helps. Note that the project ships English only and
+        mock adapters only; features for a specific language or vendor belong in
+        your deployment.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I would like to work on this.
