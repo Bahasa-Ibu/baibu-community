@@ -190,3 +190,74 @@ def test_errors_page_empty(client, staff):
 
 def test_nav_links_staff_area(client, staff):
     assert reverse("staff:dashboard") in client.get(reverse("home")).content.decode()
+
+
+# --- Conversations ----------------------------------------------------------
+
+
+@pytest.fixture
+def talked(user):
+    record_consent(user=user, tier=ConsentRecord.Tier.EVAL_ONLY, source="test", scope="chat")
+    conversation = chat_services.start_conversation(user=user)
+    _message, run = chat_services.send_message(
+        conversation=conversation, content="Where is the clinic?", idempotency_key="c1"
+    )
+    chat_services.execute(run.pk)
+    return conversation
+
+
+def test_conversations_are_staff_only(client, user, talked):
+    for url in (reverse("staff:conversations"), reverse("staff:conversation", args=[talked.pk])):
+        assert reverse("account_login") in client.get(url).url
+        client.force_login(user)
+        assert client.get(url).status_code == 403
+        client.logout()
+
+
+def test_list_shows_newest_activity_first(client, staff, talked):
+    other = chat_services.start_conversation(user=UserFactory(email="second@example.org"))
+    page = client.get(reverse("staff:conversations")).content.decode()
+    assert page.index(str(other.pk)) < page.index(str(talked.pk))
+    assert "second@example.org" in page
+
+
+def test_search_matches_messages_and_email_without_repeats(client, staff, talked):
+    chat_services.start_conversation(user=UserFactory(email="nobody@example.org"))
+    url = reverse("staff:conversations")
+    page = client.get(url, {"q": "clinic"}).content.decode()
+    assert page.count(reverse("staff:conversation", args=[talked.pk])) == 1
+    assert "nobody@example.org" not in page
+    assert (
+        reverse("staff:conversation", args=[talked.pk])
+        in client.get(url, {"q": talked.user.email[:6].upper()}).content.decode()
+    )
+    assert "No conversation matches" in client.get(url, {"q": "zebra"}).content.decode()
+    # A message matched twice still gives one row.
+    chat_services.send_message(conversation=talked, content="clinic again", idempotency_key="c2")
+    assert (
+        client.get(url, {"q": "clinic"}).content.decode().count(reverse("staff:conversation", args=[talked.pk])) == 1
+    )
+
+
+def test_detail_shows_messages_runs_and_events(client, staff, talked):
+    page = client.get(reverse("staff:conversation", args=[talked.pk])).content.decode()
+    assert "Where is the clinic?" in page
+    assert "You said: Where is the clinic?" in page
+    assert "mock" in page
+    assert "run_queued" in page or "message_sent" in page
+    assert client.get(reverse("staff:conversation", args=[talked.pk])).headers["Cache-Control"].find("no-store") >= 0
+
+
+def test_event_payloads_are_escaped(client, staff, talked):
+    chat_services.record_event(conversation=talked, type="note", text="<script>alert(1)</script>")
+    page = client.get(reverse("staff:conversation", args=[talked.pk])).content.decode()
+    assert "<script>alert(1)</script>" not in page
+    assert "&lt;script&gt;" in page
+
+
+def test_nav_link_and_switch(client, staff, talked, settings):
+    assert reverse("staff:conversations") in client.get(reverse("staff:dashboard")).content.decode()
+    settings.STAFF_CONVERSATION_BROWSING = False
+    assert reverse("staff:conversations") not in client.get(reverse("staff:dashboard")).content.decode()
+    assert client.get(reverse("staff:conversations")).status_code == 404
+    assert client.get(reverse("staff:conversation", args=[talked.pk])).status_code == 404

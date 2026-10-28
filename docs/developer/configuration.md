@@ -140,6 +140,12 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_VOICE_RATE_PER_DAY` | `500` | Voice messages one person may send per calendar day in `DJANGO_TIME_ZONE`. A guard against abuse, not a quota; set it well above real use. `0` means no limit. The browser shows which limit was reached. |
 | `CHAT_VOICE_CONTENT_TYPES` | `audio/webm,audio/ogg,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav` | Audio formats accepted for upload (comma-separated). |
 
+## Staff
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `STAFF_CONVERSATION_BROWSING` | `True` | Staff can search and open every conversation at `/staff/conversations/` (transcript, replies, audit events), whatever the user's consent tier. Set to `False` if staff should see only conversations that users report; the pages then return 404. |
+
 ## Notifications
 
 See [Notifications](notifications.md).

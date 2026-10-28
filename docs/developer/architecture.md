@@ -308,7 +308,7 @@ never prefixed.
 | `/chat/` | Conversations and a new chat |
 | `/notifications/` | The user's notifications |
 | `/chat/replies/<id>/report/` | Report an assistant reply |
-| `/staff/` | Staff overview, review queues (`review/submissions/`, `review/chats/`) and `errors/` |
+| `/staff/` | Staff overview, review queues (`review/submissions/`, `review/chats/`), `conversations/` (search and detail, unless `STAFF_CONVERSATION_BROWSING` is off) and `errors/` |
 | `/chat/consent/` | Chat consent choice |
 | `/chat/<id>/` | One conversation |
 | `/translations/` | Translations overview (translators only) |

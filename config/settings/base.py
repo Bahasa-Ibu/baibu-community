@@ -454,6 +454,13 @@ CHAT_TAGGING_MAX_MESSAGES = env.int("CHAT_TAGGING_MAX_MESSAGES", default=40)
 CHAT_TAGGING_MAX_CHARACTERS = env.int("CHAT_TAGGING_MAX_CHARACTERS", default=12000)
 CHAT_TAGGING_BATCH_SIZE = env.int("CHAT_TAGGING_BATCH_SIZE", default=100)
 
+# STAFF
+# ------------------------------------------------------------------------------
+# Staff can search and open every conversation (transcript, runs, events) at
+# /staff/conversations/. Turn this off if staff should only see conversations
+# that users report.
+STAFF_CONVERSATION_BROWSING = env.bool("STAFF_CONVERSATION_BROWSING", default=True)
+
 # NOTIFICATIONS
 # ------------------------------------------------------------------------------
 NOTIFICATIONS_ENABLED = env.bool("NOTIFICATIONS_ENABLED", default=True)

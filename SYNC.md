@@ -18,6 +18,7 @@ production content, prompts and vendor integrations never come across.
 | 2026-10-06 | production `main` as of 2026-10-05 | storage (#14), submissions (#13) | Text submission intake, raw and cleaned copies in private storage, statuses, duplicate refusal, deletion of stored files. Redesigned rather than ported: see the differences below. |
 | 2026-10-06 | production `main` as of 2026-10-05 | chat (#15), search (#16) | Conversations, idempotent sends, runs on Celery, retries, prompt versions, model variants, audit trail; the `internet_search` tool with sources. Redesigned rather than ported. |
 | 2026-10-28 | production `main` as of 2026-10-28 | #46 | Voice reliability: recording length measured at stop, longer recordings at a lower bitrate, per-minute and per-day limits that count accepted messages only, and the real refusal reason shown instead of a generic error. Provider failures sorted by kind, with rate limits and brief outages retried for a bounded time. Rewritten with settings instead of fixed values. |
+| 2026-10-28 | production `main` as of 2026-10-28 | _this pull request_ | Staff conversation search and detail pages (messages, reply attempts, audit events), replacing the need to use the admin to inspect a conversation. Rewritten with a switch to turn it off. |
 
 ## Deliberate differences
 
@@ -42,5 +43,6 @@ production content, prompts and vendor integrations never come across.
 | Topic tagging | Off by default; topics defined per deployment in the admin; only conversations with evaluation consent; LiteLLM tagger with an overridable prompt and a keyword fallback for the mock model | White-label, consent-first. |
 | Provider retries | Rate limits (429) and brief outages (5xx) are retried inside one call for `CHAT_PROVIDER_RETRY_SECONDS`; timeouts are left to the per-message attempts | A timeout already spent the whole call timeout; waiting again would hold a worker. |
 | Voice reliability | Browser measures the length at stop and records at a set bitrate; per-minute and per-day limits count accepted messages only; no "ask again" rule when the transcript is uncertain | The transcript goes to the reply as typed text, so there is no model-side confidence to act on. |
+| Staff conversations | Search by message text, title or email; no per-run request snapshots; a setting turns browsing off | Runs here keep no copy of the provider request. |
 | Migrations | Fresh history starting at `0001` | Upstream migrations are regenerated, not copied. |
 | Layout | Django project at the repository root (upstream: `web-app/`) | Map `web-app/<path>` to `<path>`. |
