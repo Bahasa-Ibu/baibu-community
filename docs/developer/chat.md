@@ -48,6 +48,13 @@ sequenceDiagram
 - **Retries.** A failed reply shows *Try again*. A retry creates a new run
   for the same message (the message is not duplicated), up to
   `CHAT_MAX_ATTEMPTS` attempts per message.
+- **Provider failures.** Inside one model call, rate limits (HTTP 429) and
+  brief outages (500, 502, 503, 504) are retried with growing waits for up to
+  `CHAT_PROVIDER_RETRY_SECONDS`, so a busy provider does not fail the reply
+  at once. The run's error code says what happened: `rate_limited`,
+  `timeout`, `transient_provider_error`, `permission_denied`, `bad_request`
+  or `model_error`. Transcription calls are treated the same way. See
+  `baibu/chat/provider_errors.py`.
 - **Recovery.** Every minute, Celery beat runs `sweep_runs`: runs still
   running after `CHAT_RUN_TIMEOUT_SECONDS` are failed (so the user can
   retry), queued runs whose task was lost are sent again, and queued runs
@@ -198,13 +205,20 @@ sequenceDiagram
 
 - **Recording.** `static/js/chat.js` records with the browser's
   `MediaRecorder` and shows the *Record* button only where recording is
-  supported. A second click stops and sends; recording also stops after
-  `CHAT_VOICE_MAX_SECONDS`. On the start page a recording starts a new
+  supported, at `CHAT_VOICE_BITRATE`. A second click stops and sends;
+  recording also stops after `CHAT_VOICE_MAX_SECONDS`. The browser measures
+  the length when recording stops and sends it with the file; the server
+  keeps it as `recorded_seconds`, or drops it if it is missing or over the
+  limit (the file is still accepted). On the start page a recording starts a new
   conversation. Without JavaScript there is no voice input.
 - **Upload checks.** The server accepts recordings up to
   `CHAT_VOICE_MAX_BYTES` in a format listed in `CHAT_VOICE_CONTENT_TYPES`.
   Sends are idempotent like typed ones: the same key twice stores one
   recording and creates one message.
+- **Limits.** Each person may send `CHAT_VOICE_RATE_PER_MINUTE` voice
+  messages a minute and `CHAT_VOICE_RATE_PER_DAY` a day (calendar day in
+  `DJANGO_TIME_ZONE`). A refused upload is not counted, and the browser shows
+  which limit was reached instead of a generic connection error.
 - **Storage.** The recording goes to private storage through
   `baibu.core.storage`; an `AudioClip` keeps its key, format, size, status,
   attempt number, provider, duration and any error. Deleting the message,

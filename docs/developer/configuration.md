@@ -109,6 +109,7 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_CONSENT_SCOPE` | `chat` | Consent scope users choose before chatting. |
 | `CHAT_MODEL` | `mock` | Model used when no model variant is the default. `mock` needs no model. |
 | `CHAT_MODEL_TIMEOUT` | `60` | Seconds to wait for the model. |
+| `CHAT_PROVIDER_RETRY_SECONDS` | `60` | How long one model or transcription call keeps retrying rate limits and brief provider outages (HTTP 429, 500, 502, 503, 504), waiting 1, 2, 4 … seconds between tries. `0` turns retrying off. Timeouts, refused keys and bad requests are not retried inside the call; a failed reply can still be retried by the person or by `CHAT_MAX_ATTEMPTS`. |
 | `CHAT_CONTEXT_MESSAGES` | `20` | Earlier messages sent to the model with each new one. |
 | `CHAT_MAX_MESSAGE_CHARACTERS` | `4000` | Longest message accepted. |
 | `CHAT_MAX_ATTEMPTS` | `3` | Attempts at one reply, including retries. |
@@ -133,7 +134,10 @@ See [Assistant chat](chat.md). Models and prompts are managed in the admin.
 | `CHAT_STT_TIMEOUT` | `60` | `LiteLLMSpeechToText`: seconds to wait for a transcript. |
 | `CHAT_STT_PARAMETERS` | `{}` | `LiteLLMSpeechToText`: extra arguments for every call, as JSON, e.g. `{"language": "sw"}`. |
 | `CHAT_VOICE_MAX_BYTES` | `10485760` (10 MiB) | Largest recording accepted. Set your reverse proxy's upload limit to match. |
-| `CHAT_VOICE_MAX_SECONDS` | `120` | The browser stops recording and sends after this many seconds. |
+| `CHAT_VOICE_MAX_SECONDS` | `300` | The browser stops recording and sends after this many seconds. The length the browser measured is stored with the recording; a value over this limit is ignored, not refused (`CHAT_VOICE_MAX_BYTES` is the hard bound). |
+| `CHAT_VOICE_BITRATE` | `48000` | Bits per second the browser records at. Speech stays clear far below the browser default, and files are about 60% smaller. |
+| `CHAT_VOICE_RATE_PER_MINUTE` | `6` | Voice messages one person may send per minute. `0` means no limit. Only accepted messages count; deleting a conversation removes its recordings from the count. |
+| `CHAT_VOICE_RATE_PER_DAY` | `500` | Voice messages one person may send per calendar day in `DJANGO_TIME_ZONE`. A guard against abuse, not a quota; set it well above real use. `0` means no limit. The browser shows which limit was reached. |
 | `CHAT_VOICE_CONTENT_TYPES` | `audio/webm,audio/ogg,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav` | Audio formats accepted for upload (comma-separated). |
 
 ## Notifications

@@ -98,11 +98,13 @@
     button.textContent = on ? button.dataset.labelStop : button.dataset.labelStart;
   }
 
-  async function upload(button, blob, type) {
+  async function upload(button, blob, type, seconds) {
     const form = button.closest("form");
     const data = new FormData();
     data.append("csrfmiddlewaretoken", form.querySelector("input[name=csrfmiddlewaretoken]").value);
     data.append("idempotency_key", form.querySelector("input[name=idempotency_key]").value);
+    // Length at the moment recording stopped, not when the user sent it.
+    data.append("duration_seconds", seconds.toFixed(1));
     data.append("audio", blob, "voice." + (type.split("/")[1] || "webm").split(";")[0]);
     button.disabled = true;
     button.textContent = button.dataset.labelSending;
@@ -140,7 +142,11 @@
       return;
     }
     const type = TYPES.find(function (t) { return MediaRecorder.isTypeSupported(t); }) || "";
-    const media = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const options = type ? { mimeType: type } : {};
+    const bitrate = parseInt(button.dataset.bitrate, 10);
+    if (bitrate) options.audioBitsPerSecond = bitrate;
+    const media = new MediaRecorder(stream, options);
+    const startedAt = Date.now();
     recorder.media = media;
     recorder.chunks = [];
     media.addEventListener("dataavailable", function (event) {
@@ -152,13 +158,13 @@
       const mime = (media.mimeType || type || "audio/webm").split(";")[0];
       const blob = new Blob(recorder.chunks, { type: mime });
       recorder.media = null;
-      if (blob.size) upload(button, blob, mime);
+      if (blob.size) upload(button, blob, mime, (Date.now() - startedAt) / 1000);
       else setRecording(button, false);
     });
     media.start();
     voiceStatus("");
     setRecording(button, true);
-    const limit = parseInt(button.dataset.maxSeconds, 10) || 120;
+    const limit = parseInt(button.dataset.maxSeconds, 10) || 300;
     recorder.timer = setTimeout(function () {
       if (media.state === "recording") media.stop();
     }, limit * 1000);

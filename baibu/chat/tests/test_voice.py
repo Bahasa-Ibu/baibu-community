@@ -48,10 +48,13 @@ def _voice(conversation, audio=AUDIO, key="v1", content_type="audio/webm"):
     return services.send_voice(conversation=conversation, audio=audio, content_type=content_type, idempotency_key=key)
 
 
-def _upload(client, conversation, audio=AUDIO, content_type="audio/webm;codecs=opus", key="v1", **extra):
+def _upload(client, conversation, audio=AUDIO, content_type="audio/webm;codecs=opus", key="v1", seconds=None, **extra):
     url = reverse("chat:voice", args=[conversation.pk]) if conversation else reverse("chat:voice_new")
     upload = SimpleUploadedFile("voice.webm", audio, content_type=content_type)
-    return client.post(url, {"audio": upload, "idempotency_key": key}, **extra)
+    data = {"audio": upload, "idempotency_key": key}
+    if seconds is not None:
+        data["duration_seconds"] = seconds
+    return client.post(url, data, **extra)
 
 
 def _events(conversation):
@@ -449,3 +452,114 @@ def test_voice_endpoints_404_when_off(client, conversation, settings):
     assert _upload(client, conversation, key="v2").status_code == 404
     assert _upload(client, None, key="v3").status_code == 404
     assert client.post(reverse("chat:voice_retry", args=[message.audio.pk])).status_code == 404
+
+
+# --- Limits and recorded length ---------------------------------------------
+
+
+def test_recorded_length_is_kept_only_when_within_the_limit(conversation, settings):
+    settings.CHAT_VOICE_MAX_SECONDS = 300
+    first = _voice(conversation, key="a")
+    assert first.audio.recorded_seconds is None
+    AudioClip.objects.update(status=AudioClip.Status.TRANSCRIBED)
+    kept = services.send_voice(
+        conversation=conversation, audio=AUDIO, content_type="audio/webm", idempotency_key="b", recorded_seconds=61.5
+    )
+    assert kept.audio.recorded_seconds == 61.5
+    AudioClip.objects.update(status=AudioClip.Status.TRANSCRIBED)
+    over = services.send_voice(
+        conversation=conversation, audio=AUDIO, content_type="audio/webm", idempotency_key="c", recorded_seconds=301
+    )
+    assert over.audio.recorded_seconds is None
+
+
+def test_upload_reads_the_measured_length(client, conversation):
+    _upload(client, conversation, seconds="42.5", **FETCH)
+    assert AudioClip.objects.get().recorded_seconds == 42.5
+
+
+@pytest.mark.parametrize("sent", ["900", "-3", "abc", ""])
+def test_an_unusable_length_is_ignored_not_refused(client, conversation, sent):
+    response = _upload(client, conversation, seconds=sent, **FETCH)
+    assert response.status_code == 200
+    assert AudioClip.objects.get().recorded_seconds is None
+
+
+def test_minute_limit_counts_accepted_messages_only(client, conversation, settings):
+    settings.CHAT_VOICE_RATE_PER_MINUTE = 2
+    AudioClip.objects.all().delete()
+    for key in ("a", "b"):
+        AudioClip.objects.filter(status=AudioClip.Status.PENDING).update(status=AudioClip.Status.TRANSCRIBED)
+        message = _voice(conversation, key=key)
+        AudioClip.objects.filter(pk=message.audio.pk).update(status=AudioClip.Status.TRANSCRIBED)
+    with pytest.raises(services.VoiceLimitError) as excinfo:
+        _voice(conversation, key="c")
+    assert excinfo.value.code == "minute_limit"
+    assert AudioClip.objects.count() == 2
+    # Repeating a message that was accepted is not a new message.
+    assert _voice(conversation, key="a").audio.pk
+    # A minute later the allowance is back.
+    AudioClip.objects.update(created_at=timezone.now() - timedelta(minutes=2))
+    _voice(conversation, key="d")
+
+
+def test_day_limit_resets_at_local_midnight(conversation, settings):
+    settings.CHAT_VOICE_RATE_PER_MINUTE = 0
+    settings.CHAT_VOICE_RATE_PER_DAY = 1
+    first = _voice(conversation, key="a")
+    AudioClip.objects.filter(pk=first.audio.pk).update(status=AudioClip.Status.TRANSCRIBED)
+    with pytest.raises(services.VoiceLimitError) as excinfo:
+        _voice(conversation, key="b")
+    assert excinfo.value.code == "day_limit"
+    yesterday = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
+    AudioClip.objects.update(created_at=yesterday)
+    _voice(conversation, key="b")
+
+
+def test_limits_can_be_turned_off(conversation, settings):
+    settings.CHAT_VOICE_RATE_PER_MINUTE = 0
+    settings.CHAT_VOICE_RATE_PER_DAY = 0
+    for key in "abcdefgh":
+        message = _voice(conversation, key=key)
+        AudioClip.objects.filter(pk=message.audio.pk).update(status=AudioClip.Status.TRANSCRIBED)
+    assert AudioClip.objects.count() == 8
+
+
+def test_limits_are_per_person(conversation, settings):
+    settings.CHAT_VOICE_RATE_PER_MINUTE = 1
+    first = _voice(conversation, key="a")
+    AudioClip.objects.filter(pk=first.audio.pk).update(status=AudioClip.Status.TRANSCRIBED)
+    other = ConversationFactory()
+    assert _voice(other, key="a").audio
+
+
+def test_limit_reaches_the_browser_with_its_reason(client, conversation, settings):
+    settings.CHAT_VOICE_RATE_PER_MINUTE = 1
+    _upload(client, conversation, **FETCH)
+    AudioClip.objects.update(status=AudioClip.Status.TRANSCRIBED)
+    response = _upload(client, conversation, key="v2", **FETCH)
+    assert response.status_code == 429
+    assert "too fast" in response.content.decode()
+    plain = _upload(client, conversation, key="v3", follow=True)
+    assert "too fast" in plain.content.decode()
+    assert AudioClip.objects.count() == 1
+
+
+def test_limit_on_a_new_conversation_leaves_nothing(client, chatter, settings):
+    settings.CHAT_VOICE_RATE_PER_DAY = 1
+    settings.CHAT_VOICE_RATE_PER_MINUTE = 0
+    _upload(client, None, key="n1", **FETCH)
+    AudioClip.objects.update(status=AudioClip.Status.TRANSCRIBED)
+    before = Conversation.objects.count()
+    response = _upload(client, None, key="n2", **FETCH)
+    assert response.status_code == 429
+    assert "today's limit" in response.content.decode()
+    assert Conversation.objects.count() == before
+    plain = _upload(client, None, key="n3")
+    assert plain.url == reverse("chat:home")
+
+
+def test_composer_hands_the_recorder_its_limits(client, conversation):
+    page = client.get(reverse("chat:conversation", args=[conversation.pk])).content.decode()
+    assert 'data-max-seconds="300"' in page
+    assert 'data-bitrate="48000"' in page

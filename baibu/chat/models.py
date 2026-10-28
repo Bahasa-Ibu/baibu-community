@@ -272,6 +272,9 @@ class AudioClip(models.Model):
     content_type = models.CharField(max_length=64)
     size_bytes = models.PositiveIntegerField()
     duration_seconds = models.FloatField(null=True, blank=True)
+    # Length the browser measured when recording stopped; empty when it sent
+    # none or one beyond the limit.
+    recorded_seconds = models.FloatField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
     attempt = models.PositiveSmallIntegerField(default=1)
     provider = models.CharField(max_length=128, blank=True)

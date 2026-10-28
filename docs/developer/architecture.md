@@ -275,6 +275,8 @@ the receipt number, source and time, never personal details.
   queues `execute_run` once the transcript is in; beat runs
   `baibu.chat.tasks.sweep_transcriptions` every minute to recover stuck
   transcriptions.
+- Model and transcription calls retry rate limits and brief outages for up
+  to `CHAT_PROVIDER_RETRY_SECONDS` (`baibu/chat/provider_errors.py`).
 - Every night (`METRICS_COMPUTE_HOUR`:`METRICS_COMPUTE_MINUTE`, platform
   time), beat runs `baibu.metrics.tasks.compute_daily_metrics`, which stores
   the previous day's usage counts (and any days missed while the worker was
