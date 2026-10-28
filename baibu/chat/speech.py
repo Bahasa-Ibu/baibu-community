@@ -19,6 +19,8 @@ from functools import cache
 from django.conf import settings
 from django.utils.module_loading import import_string
 
+from . import provider_errors
+
 
 class TranscriptionError(Exception):
     """Transcription failed. ``code`` is safe to show and store."""
@@ -120,9 +122,10 @@ class LiteLLMSpeechToText(SpeechToText):
         if settings.CHAT_STT_API_KEY_ENV and (key := os.environ.get(settings.CHAT_STT_API_KEY_ENV, "")):
             kwargs["api_key"] = key
         try:
-            response = litellm.transcription(**kwargs)
+            response = provider_errors.call_with_retry(lambda: litellm.transcription(**kwargs))
         except Exception as exc:
-            code = "timeout" if "timeout" in type(exc).__name__.lower() else "transcription_error"
+            kind = provider_errors.classify(exc)
+            code = kind if kind != provider_errors.OTHER else "transcription_error"
             msg = f"Transcription failed: {type(exc).__name__}"
             raise TranscriptionError(msg, code=code) from exc
         text = getattr(response, "text", None)

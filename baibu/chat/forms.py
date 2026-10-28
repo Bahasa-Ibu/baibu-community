@@ -40,6 +40,16 @@ class VoiceForm(forms.Form):
 
     audio = forms.FileField(label=_("Voice message"))
     idempotency_key = forms.CharField(widget=forms.HiddenInput, max_length=64)
+    # Measured by the browser when recording stops. Optional and never a
+    # reason to refuse: the size limit is the hard bound.
+    duration_seconds = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def clean_duration_seconds(self):
+        try:
+            value = float(self.cleaned_data.get("duration_seconds") or "")
+        except ValueError:
+            return None
+        return value if 0 <= value <= settings.CHAT_VOICE_MAX_SECONDS else None
 
     def clean_audio(self):
         audio = self.cleaned_data["audio"]

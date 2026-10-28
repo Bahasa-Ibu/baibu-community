@@ -14,6 +14,8 @@ from dataclasses import field
 
 from django.conf import settings
 
+from . import provider_errors
+
 
 class ModelError(Exception):
     """The model call failed. ``code`` is safe to show and store."""
@@ -84,9 +86,10 @@ def _litellm_completion(config: ModelConfig, messages, *, tools):
     if tools:
         kwargs["tools"] = tools
     try:
-        response = litellm.completion(**kwargs)
+        response = provider_errors.call_with_retry(lambda: litellm.completion(**kwargs))
     except Exception as exc:
-        code = "timeout" if "timeout" in type(exc).__name__.lower() else "model_error"
+        kind = provider_errors.classify(exc)
+        code = kind if kind != provider_errors.OTHER else "model_error"
         msg = f"Model call failed: {type(exc).__name__}"
         raise ModelError(msg, code=code) from exc
     try:

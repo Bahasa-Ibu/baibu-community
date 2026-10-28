@@ -383,6 +383,10 @@ CHAT_CONSENT_SCOPE = env("CHAT_CONSENT_SCOPE", default="chat")
 # answers locally without any model; any LiteLLM model name works.
 CHAT_MODEL = env("CHAT_MODEL", default="mock")
 CHAT_MODEL_TIMEOUT = env.int("CHAT_MODEL_TIMEOUT", default=60)
+# How long one model or transcription call keeps retrying rate limits and
+# brief provider outages, with growing waits, before the attempt fails.
+# 0 turns retrying off.
+CHAT_PROVIDER_RETRY_SECONDS = env.int("CHAT_PROVIDER_RETRY_SECONDS", default=60)
 # Earlier messages sent to the model with each new one.
 CHAT_CONTEXT_MESSAGES = env.int("CHAT_CONTEXT_MESSAGES", default=20)
 CHAT_MAX_MESSAGE_CHARACTERS = env.int("CHAT_MAX_MESSAGE_CHARACTERS", default=4000)
@@ -411,7 +415,15 @@ CHAT_STT_TIMEOUT = env.int("CHAT_STT_TIMEOUT", default=60)
 CHAT_STT_PARAMETERS = env.json("CHAT_STT_PARAMETERS", default={})
 # Largest recording accepted, in bytes, and the longest the browser records.
 CHAT_VOICE_MAX_BYTES = env.int("CHAT_VOICE_MAX_BYTES", default=10 * 1024 * 1024)
-CHAT_VOICE_MAX_SECONDS = env.int("CHAT_VOICE_MAX_SECONDS", default=120)
+CHAT_VOICE_MAX_SECONDS = env.int("CHAT_VOICE_MAX_SECONDS", default=300)
+# Audio bitrate the browser records at. Speech stays clear well below the
+# browser default, and smaller files upload and store faster.
+CHAT_VOICE_BITRATE = env.int("CHAT_VOICE_BITRATE", default=48000)
+# Voice messages one person may send per minute and per calendar day (in
+# TIME_ZONE). Only accepted messages count, so a refused upload can be tried
+# again. 0 means no limit. These guard against abuse; they are not quotas.
+CHAT_VOICE_RATE_PER_MINUTE = env.int("CHAT_VOICE_RATE_PER_MINUTE", default=6)
+CHAT_VOICE_RATE_PER_DAY = env.int("CHAT_VOICE_RATE_PER_DAY", default=500)
 # Audio formats accepted for upload.
 CHAT_VOICE_CONTENT_TYPES = env.list(
     "CHAT_VOICE_CONTENT_TYPES",

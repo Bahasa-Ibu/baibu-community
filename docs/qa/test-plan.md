@@ -265,6 +265,13 @@ the staff queues.
   in `CHAT_VOICE_CONTENT_TYPES` are refused and nothing is stored.
 - The same idempotency key sent twice stores one recording and creates one
   message.
+- The length sent by the browser is stored as `recorded_seconds`. Missing,
+  malformed or over-limit values are stored as empty; they never cause a
+  refusal.
+- A person is refused with HTTP 429 and an explanation once they have
+  `CHAT_VOICE_RATE_PER_MINUTE` accepted voice messages in the last minute or
+  `CHAT_VOICE_RATE_PER_DAY` since local midnight. A refusal stores nothing
+  and does not use up the allowance. `0` turns a limit off.
 - Statuses: `pending`, `transcribing`, `transcribed`, `failed`. A clip is
   transcribed at most once per attempt; a transcript arriving after the clip
   was failed is discarded.
@@ -343,6 +350,8 @@ feature lands.
 | TC-VOI-04 | Voice message | As TC-VOI-01 | Upload 101 bytes with `CHAT_VOICE_MAX_BYTES=100`, then a `text/html` file | Both are refused with a message. No AudioClip and nothing in storage. |
 | TC-VOI-05 | Voice message | A transcribed voice message | Delete the conversation (or the account) | The AudioClip is gone and its recording no longer exists in storage. |
 | TC-VOI-06 | Voice message | Another user's voice message | Request its playback and retry URLs, and upload to their conversation | All return 404. |
+| TC-VOI-08 | Voice message | As TC-VOI-01, with `CHAT_VOICE_RATE_PER_MINUTE=1` | Upload a recording, wait for it to be transcribed, then upload another straight away; wait a minute and upload again | The second upload is refused with HTTP 429 and "too fast", nothing is stored for it, and the third is accepted. |
+| TC-VOI-09 | Voice message | As TC-VOI-01, with `CHAT_VOICE_MAX_SECONDS=300` | Upload with a measured length of 42.5, then with 900 and with `abc` | All three are accepted; `recorded_seconds` is 42.5 for the first and empty for the others. |
 | TC-VOI-07 | Voice message | `CHAT_STT_PROVIDER` empty (default) | Open a conversation and post to the voice URLs | No record button; the voice URLs return 404. Typed chat works as before. |
 
 ## Pull request workflow

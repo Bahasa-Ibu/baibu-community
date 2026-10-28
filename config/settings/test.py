@@ -23,3 +23,4 @@ MESSAGING_PROVIDER = "baibu.users.messaging.MemoryMessagingProvider"
 # Tests of the translation workflow turn this on; other tests should not
 # query for publications on every request.
 LOCALIZATION_SYNC = False
+CHAT_PROVIDER_RETRY_SECONDS = 0  # tests never wait on a provider

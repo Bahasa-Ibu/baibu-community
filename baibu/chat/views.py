@@ -59,7 +59,13 @@ def voice_enabled(view):
 def _voice_context(action: str) -> dict:
     if not speech.voice_enabled():
         return {}
-    return {"voice": {"url": action, "max_seconds": settings.CHAT_VOICE_MAX_SECONDS}}
+    return {
+        "voice": {
+            "url": action,
+            "max_seconds": settings.CHAT_VOICE_MAX_SECONDS,
+            "bitrate": settings.CHAT_VOICE_BITRATE,
+        }
+    }
 
 
 def chat_consent_required(view):
@@ -312,11 +318,21 @@ def new_voice_view(request: HttpRequest) -> HttpResponse:
     if existing:
         return redirect("chat:conversation", pk=existing.pk)
     audio = form.cleaned_data["audio"]
-    with transaction.atomic():
-        conversation = services.start_conversation(user=request.user, language_code=request.LANGUAGE_CODE)
-        services.send_voice(
-            conversation=conversation, audio=audio.read(), content_type=audio.clean_content_type, idempotency_key=key
-        )
+    try:
+        with transaction.atomic():
+            conversation = services.start_conversation(user=request.user, language_code=request.LANGUAGE_CODE)
+            services.send_voice(
+                conversation=conversation,
+                audio=audio.read(),
+                content_type=audio.clean_content_type,
+                idempotency_key=key,
+                recorded_seconds=form.cleaned_data["duration_seconds"],
+            )
+    except services.VoiceLimitError as exc:
+        if _wants_fragment(request):
+            return HttpResponse(str(exc), status=429, content_type="text/plain; charset=utf-8")
+        messages.error(request, str(exc))
+        return redirect("chat:home")
     return redirect("chat:conversation", pk=conversation.pk)
 
 
@@ -330,6 +346,7 @@ def voice_view(request: HttpRequest, pk) -> HttpResponse:
     conversation = _own_conversation(request, pk)
     form = VoiceForm(request.POST, request.FILES)
     error = ""
+    status = 400
     if form.is_valid():
         audio = form.cleaned_data["audio"]
         try:
@@ -338,13 +355,17 @@ def voice_view(request: HttpRequest, pk) -> HttpResponse:
                 audio=audio.read(),
                 content_type=audio.clean_content_type,
                 idempotency_key=form.cleaned_data["idempotency_key"],
+                recorded_seconds=form.cleaned_data["duration_seconds"],
             )
+        except services.VoiceLimitError as exc:
+            error = str(exc)
+            status = 429
         except services.ChatError as exc:
             error = str(exc)
     else:
         error = _form_error(form)
     if _wants_fragment(request):
-        return _fragment(request, conversation, status=400 if error else 200, error=error)
+        return _fragment(request, conversation, status=status if error else 200, error=error)
     if error:
         messages.error(request, error)
     return redirect("chat:conversation", pk=conversation.pk)

@@ -25,6 +25,7 @@ from django.template import Template
 from django.template.loader import get_template
 from django.utils import timezone
 from django.utils.translation import get_language_info
+from django.utils.translation import gettext as _
 
 from baibu.core import storage
 from baibu.users.consent import consent_state
@@ -50,6 +51,14 @@ class ChatError(Exception):
 
 class ConversationBusyError(ChatError):
     pass
+
+
+class VoiceLimitError(ChatError):
+    """Too many voice messages for now. ``code`` says which limit was reached."""
+
+    def __init__(self, message: str, *, code: str):
+        super().__init__(message)
+        self.code = code
 
 
 class RetryNotAllowedError(ChatError):
@@ -365,11 +374,43 @@ def _enqueue_transcription(clip: AudioClip) -> None:
     transaction.on_commit(lambda: transcribe_audio.delay(str(clip.pk)))
 
 
-def send_voice(*, conversation: Conversation, audio: bytes, content_type: str, idempotency_key: str) -> Message:
+def check_voice_limits(user) -> None:
+    """Refuse a voice message once ``user`` has sent too many.
+
+    Counts messages that were accepted, so a refused upload never uses up
+    the allowance. The day is the calendar day in ``TIME_ZONE``.
+    """
+    clips = AudioClip.objects.filter(conversation__user=user)
+    now = timezone.localtime()
+    per_minute = settings.CHAT_VOICE_RATE_PER_MINUTE
+    if per_minute and clips.filter(created_at__gte=now - timedelta(minutes=1)).count() >= per_minute:
+        raise VoiceLimitError(
+            _("You are sending voice messages too fast. Wait a minute and try again."),
+            code="minute_limit",
+        )
+    per_day = settings.CHAT_VOICE_RATE_PER_DAY
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    if per_day and clips.filter(created_at__gte=midnight).count() >= per_day:
+        raise VoiceLimitError(
+            _("You have reached today's limit for voice messages. Try again tomorrow."),
+            code="day_limit",
+        )
+
+
+def send_voice(
+    *,
+    conversation: Conversation,
+    audio: bytes,
+    content_type: str,
+    idempotency_key: str,
+    recorded_seconds: float | None = None,
+) -> Message:
     """Store a recording, add an empty user message and queue transcription.
 
-    Safe to call twice with one key. Storage errors are let through and
-    nothing is recorded then.
+    Safe to call twice with one key (a repeat is not counted against the
+    limits). Storage errors are let through and nothing is recorded then.
+    ``recorded_seconds`` is what the browser measured; it is kept only if it
+    is within ``CHAT_VOICE_MAX_SECONDS``.
     """
     with transaction.atomic():
         conversation = Conversation.objects.select_for_update().get(pk=conversation.pk)
@@ -378,6 +419,9 @@ def send_voice(*, conversation: Conversation, audio: bytes, content_type: str, i
             return existing
         if is_busy(conversation):
             raise ConversationBusyError(BUSY_MESSAGE)
+        check_voice_limits(conversation.user)
+        if recorded_seconds is not None and not 0 <= recorded_seconds <= settings.CHAT_VOICE_MAX_SECONDS:
+            recorded_seconds = None
         clip_id = uuid.uuid7()
         key = storage.save_bytes(
             storage.build_key(AUDIO_AREA, f"{clip_id}.{speech.extension_for(content_type)}"), audio
@@ -394,6 +438,7 @@ def send_voice(*, conversation: Conversation, audio: bytes, content_type: str, i
                     storage_key=key,
                     content_type=content_type,
                     size_bytes=len(audio),
+                    recorded_seconds=recorded_seconds,
                 )
                 record_event(
                     conversation=conversation,

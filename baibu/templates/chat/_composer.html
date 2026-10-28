@@ -7,7 +7,7 @@
   {% if voice %}
     {# Shown by chat.js only where the browser can record. #}
     <button type="button" class="btn-secondary" hidden aria-pressed="false" data-voice-record
-            data-url="{{ voice.url }}" data-max-seconds="{{ voice.max_seconds }}"
+            data-url="{{ voice.url }}" data-max-seconds="{{ voice.max_seconds }}" data-bitrate="{{ voice.bitrate }}"
             data-label-start="{% translate "Record" %}" data-label-stop="{% translate "Stop and send" %}"
             data-label-sending="{% translate "Sending…" %}"
             data-label-denied="{% translate "The microphone could not be used." %}"
