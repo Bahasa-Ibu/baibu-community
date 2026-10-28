@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Conversation" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{{ conversation }}</h1>
+  {% include "staff/_nav.html" %}
+  <dl class="card mb-6 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+    <div><dt class="text-stone-500">{% translate "User" %}</dt><dd>{{ conversation.user.email|default:conversation.user }}</dd></div>
+    <div><dt class="text-stone-500">{% translate "Consent" %}</dt><dd>{{ conversation.get_consent_tier_display }}</dd></div>
+    <div><dt class="text-stone-500">{% translate "Started" %}</dt><dd>{{ conversation.created_at|date:"DATETIME_FORMAT" }}</dd></div>
+    <div><dt class="text-stone-500">{% translate "Language" %}</dt><dd>{{ conversation.language_code|default:"–" }}</dd></div>
+  </dl>
+  <h2 class="mb-2 text-base">{% translate "Messages" %}</h2>
+  <div class="mb-6 space-y-3">
+    {% for message in transcript %}
+      <div class="rounded-xl border border-stone-200 bg-white px-4 py-3">
+        <p class="mb-1 text-xs font-semibold uppercase text-stone-500">{{ message.get_role_display }} · {{ message.created_at|date:"DATETIME_FORMAT" }}</p>
+        <p class="whitespace-pre-line">{{ message.content }}</p>
+      </div>
+    {% empty %}
+      <div class="card text-stone-700">{% translate "No messages." %}</div>
+    {% endfor %}
+  </div>
+  <h2 class="mb-2 text-base">{% translate "Replies" %}</h2>
+  <div class="mb-6 overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="text-stone-500"><tr><th class="py-1 pr-4">{% translate "Started" %}</th><th class="pr-4">{% translate "Status" %}</th><th class="pr-4">{% translate "Attempt" %}</th><th class="pr-4">{% translate "Model" %}</th><th class="pr-4">{% translate "Prompt" %}</th><th class="pr-4">{% translate "Time (ms)" %}</th><th>{% translate "Error" %}</th></tr></thead>
+      <tbody>
+        {% for run in runs %}
+          <tr class="border-t border-stone-200">
+            <td class="py-2 pr-4">{{ run.created_at|date:"DATETIME_FORMAT" }}</td>
+            <td class="pr-4">{{ run.get_status_display }}</td>
+            <td class="pr-4">{{ run.attempt }}</td>
+            <td class="pr-4">{{ run.model_name|default:"–" }}</td>
+            <td class="pr-4">{{ run.prompt_version|default:"–" }}</td>
+            <td class="pr-4">{{ run.latency_ms|default_if_none:"–" }}</td>
+            <td>{{ run.error.code|default:"" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="py-2 text-stone-700">{% translate "No replies were requested." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <h2 class="mb-2 text-base">{% translate "Events" %}</h2>
+  <ul class="space-y-2 text-sm">
+    {% for item in events %}
+      <li class="card">
+        <details>
+          <summary class="cursor-pointer"><span class="font-semibold">{{ item.event.type }}</span> <span class="text-stone-500">· {{ item.event.created_at|date:"DATETIME_FORMAT" }}</span></summary>
+          <pre class="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">{{ item.payload }}</pre>
+        </details>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock content %}

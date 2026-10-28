@@ -19,5 +19,6 @@ def platform(request):
             "allow_registration": settings.ACCOUNT_ALLOW_REGISTRATION,
             "chat_enabled": settings.CHAT_ENABLED,
             "phone_sign_in": settings.PHONE_SIGN_IN_ENABLED,
+            "staff_conversation_browsing": settings.STAFF_CONVERSATION_BROWSING,
         },
     }

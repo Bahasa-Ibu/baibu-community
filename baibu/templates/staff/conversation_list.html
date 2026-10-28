@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Conversations" %}{% endblock title %}
+{% block content %}
+  <h1 class="mb-4">{% translate "Conversations" %}</h1>
+  {% include "staff/_nav.html" %}
+  <form method="get" class="mb-6 flex gap-2" role="search">
+    <label class="sr-only" for="q">{% translate "Search conversations" %}</label>
+    <input type="search" id="q" name="q" value="{{ q }}" class="grow" placeholder="{% translate 'Search messages, titles and email addresses' %}">
+    <button type="submit" class="btn-primary">{% translate "Search" %}</button>
+    {% if q %}<a href="{% url 'staff:conversations' %}" class="btn-secondary">{% translate "Clear" %}</a>{% endif %}
+  </form>
+  {% if page.object_list %}
+    <ul class="space-y-3">
+      {% for conversation in page.object_list %}
+        <li class="card">
+          <a href="{% url 'staff:conversation' conversation.pk %}" class="font-semibold">{{ conversation }}</a>
+          <span class="text-sm text-stone-500"> · {{ conversation.user.email|default:conversation.user }} · {{ conversation.get_consent_tier_display }} · {{ conversation.last_activity_at|date:"DATETIME_FORMAT" }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+    {% include "staff/_pages.html" %}
+  {% else %}
+    <div class="card text-stone-700">{% if q %}{% translate "No conversation matches this search." %}{% else %}{% translate "No conversations yet." %}{% endif %}</div>
+  {% endif %}
+{% endblock content %}

@@ -1,14 +1,26 @@
 # Staff review
 
 Staff (users with *staff status*) have a work area at `/staff/`, linked
-from the navigation. It has four screens.
+from the navigation. It has five screens.
 
 | Screen | Path | What it shows |
 | --- | --- | --- |
 | Overview | `/staff/` | Counts: submissions to review, reported replies, submissions with an issue, failed replies and tool calls in the last 7 days. |
 | Submissions | `/staff/review/submissions/` | Submissions in `needs_review` or `issue`, oldest first, filterable by status. |
 | Reported replies | `/staff/review/chats/` | Open reports of assistant replies, oldest first. |
+| Conversations | `/staff/conversations/` | Every conversation, most recently active first, with a search box (message text, title, owner email). Opening one shows the user and consent tier, the messages, each reply attempt (status, model, prompt version, time, error code) and the audit events with their payloads. |
 | Errors | `/staff/errors/` | Submissions with an issue and their reason, failed chat replies (error code, model, attempt) and failed tool calls from the last 7 days. |
+
+## Browsing conversations
+
+Staff can open any conversation, including ones nobody reported, whatever
+the user's consent tier. The consent tier governs how data may be *used*
+(training, evaluation); it does not hide a conversation from the people
+operating the service. Decide whether that suits your deployment, say so in
+your privacy notice, and limit who has staff status. To allow staff to see
+only reported conversations, set `STAFF_CONVERSATION_BROWSING=False`.
+
+Pages are never cached. Times are shown in `DJANGO_TIME_ZONE`.
 
 ## One decision per item
 

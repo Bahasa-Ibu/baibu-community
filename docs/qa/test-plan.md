@@ -206,6 +206,11 @@ the staff queues.
 - Only decisions allowed from the item's status are offered.
 - Staff screens are for staff only: signed-out users are sent to sign in,
   other users get 403.
+- `/staff/conversations/` lists every conversation, newest activity first,
+  and searches message text, title and owner email (case-insensitive, one
+  row per conversation). The detail page shows messages, reply attempts and
+  events; event payloads are escaped. With `STAFF_CONVERSATION_BROWSING`
+  off, both pages return 404 and the navigation link is hidden.
 
 **Notification.** A message in a user's inbox.
 
@@ -328,6 +333,7 @@ feature lands.
 | TC-SUB-02 | Submission cleaning | Storage set to fail on write | Submit text | Status is `issue`. The error is logged. No partial cleaned file is left in storage. |
 | TC-REV-01 | Staff review | Two submissions in `needs_review`; a signed-in staff member | Open the first, choose *Accept*, save | The first is `verified`, with the reviewer and time recorded; the contributor has one notification; the second submission opens next. |
 | TC-REV-02 | Staff review | A report of an assistant reply; two staff members open it | Both choose a decision and save | The first decision is kept. The second reviewer is told it was already decided. The reporter has one notification. |
+| TC-REV-03 | Staff review | A staff user; a conversation with a message containing "clinic" that nobody reported, and another without | Open Conversations, search "clinic", open the result; then set `STAFF_CONVERSATION_BROWSING=False` and reload | Only the matching conversation is listed once; its page shows messages, the reply attempt with model and time, and events. With the setting off both pages return 404 and the link is gone. |
 | TC-CHT-01 | Chat run retry | Conversation with one user message. The mocked model raises a timeout on the first call and returns "Hello" on the second. | 1. Send the message. 2. Retry the failed run. | First Run has status failed with the error recorded. A second Run succeeds. The conversation has one user message and one assistant message "Hello". |
 | TC-MET-01 | Usage metrics | Platform time zone seven hours ahead of UTC. A user sends chat messages at 00:10 and 23:30 local time on day D and at 00:30 on D+1. | Compute D and D+1 | D counts two user messages and D+1 one, following local days, not UTC days (00:30 on D+1 is still day D in UTC). |
 | TC-MET-02 | Usage metrics | On day D one user chats, one submits, one does both, one only receives an assistant message; other users were active 6, 7, 29 and 30 days before | Compute D | Active users 3; users who chatted 2, contributed 2; 7-day active counts the user from 6 days before but not 7; 30-day active counts 29 days before but not 30. |
