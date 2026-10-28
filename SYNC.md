@@ -17,7 +17,7 @@ production content, prompts and vendor integrations never come across.
 | 2026-10-06 | production `main` as of 2026-10-05 | #7 skeleton | Account model, append-only consent records, account deletion requests, profile completion. Rewritten for the Community Edition. |
 | 2026-10-06 | production `main` as of 2026-10-05 | storage (#14), submissions (#13) | Text submission intake, raw and cleaned copies in private storage, statuses, duplicate refusal, deletion of stored files. Redesigned rather than ported: see the differences below. |
 | 2026-10-06 | production `main` as of 2026-10-05 | chat (#15), search (#16) | Conversations, idempotent sends, runs on Celery, retries, prompt versions, model variants, audit trail; the `internet_search` tool with sources. Redesigned rather than ported. |
-| 2026-10-28 | production `main` as of 2026-10-28 | _this pull request_ | Voice reliability: recording length measured at stop, longer recordings at a lower bitrate, per-minute and per-day limits that count accepted messages only, and the real refusal reason shown instead of a generic error. Provider failures sorted by kind, with rate limits and brief outages retried for a bounded time. Rewritten with settings instead of fixed values. |
+| 2026-10-28 | production `main` as of 2026-10-28 | #46 | Voice reliability: recording length measured at stop, longer recordings at a lower bitrate, per-minute and per-day limits that count accepted messages only, and the real refusal reason shown instead of a generic error. Provider failures sorted by kind, with rate limits and brief outages retried for a bounded time. Rewritten with settings instead of fixed values. |
 
 ## Deliberate differences
 
